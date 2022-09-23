@@ -1,6 +1,5 @@
 
 import dis
-import opcode
 import codeop
 import hashlib
 
@@ -26,22 +25,22 @@ def chain_stf(state, data):
 # print(hashlib.sha256(stf.chain_stf.__code__.co_code).hexdigest())
 
 dis.dis(stf.chain_stf)
-print([hex(i) for i in stf.chain_stf.__code__.co_code])
+print('co_code', [hex(i) for i in stf.chain_stf.__code__.co_code])
 # print(opcode.opmap)
 
-print(stf.chain_stf.__code__.co_name)
-print(stf.chain_stf.__code__.co_varnames)
-print(stf.chain_stf.__code__.co_argcount)
+print('co_name', stf.chain_stf.__code__.co_name)
+print('co_varnames', stf.chain_stf.__code__.co_varnames)
+print('co_argcount', stf.chain_stf.__code__.co_argcount)
 
-print(stf.chain_stf.__code__.co_consts)
-print(stf.chain_stf.__code__.co_names) # for method
+print('co_consts', stf.chain_stf.__code__.co_consts)
+print('co_names', stf.chain_stf.__code__.co_names) # for method
 
-print(stf.chain_stf.__code__.co_stacksize)
-print(stf.chain_stf.__code__.co_posonlyargcount)
-print(stf.chain_stf.__code__.co_nlocals)
-print(stf.chain_stf.__code__.co_kwonlyargcount)
-print(stf.chain_stf.__code__.co_cellvars)
-print(stf.chain_stf.__code__.co_freevars)
+print('co_stacksize', stf.chain_stf.__code__.co_stacksize)
+print('co_posonlyargcount', stf.chain_stf.__code__.co_posonlyargcount)
+print('co_nlocals', stf.chain_stf.__code__.co_nlocals)
+print('co_kwonlyargcount', stf.chain_stf.__code__.co_kwonlyargcount)
+print('co_cellvars', stf.chain_stf.__code__.co_cellvars)
+print('co_freevars', stf.chain_stf.__code__.co_freevars)
 
 class VM:
     def import_function(self, function_object):
@@ -85,7 +84,9 @@ class VM:
 
         elif self.co_code[self.pc] == 0x7c: # LOAD_FAST
             param = self.co_code[self.pc+1]
+            self.stack.append(self.co_varnames[param])
             print('LOAD_FAST', param)
+            print('stack', self.stack)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x7d: # STORE_FAST
@@ -94,10 +95,16 @@ class VM:
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
+            param = self.co_code[self.pc+1]
+            self.stack.append(self.co_names[param])
+            print('LOAD_METHOD', param)
+            print('stack', self.stack)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa1: # CALL_METHOD
             self.pc += 2
+
+        print('---')
 
 vm = VM()
 vm.import_function(stf.chain_stf)
