@@ -216,13 +216,6 @@ class VM:
             self.stack.append(result)
             self.pc += 2
 
-        elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
-            param = self.co_code[self.pc+1]
-            print('LOAD_METHOD', param)
-            self.stack.append(self.co_names[param])
-            self.pc += 2
-    
-
         print('stack', self.stack)
         print('---')
 
