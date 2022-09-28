@@ -98,6 +98,76 @@ class VM:
             var = self.vars[val]
             return var
 
+        elif self.co_code[self.pc] == 0x17: # BINARY_ADD
+            print('BINARY_ADD')
+            # pop the op number
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos+tos1).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        elif self.co_code[self.pc] == 0x14: # BINARY_MULTIPLY
+            print('BINARY_MULTIPLY')
+            # pop the op number
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos*tos1).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        elif self.co_code[self.pc] == 0x13: # BINARY_POWER
+            print('BINARY_POWER')
+            # pop the op number
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos**tos1).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        elif self.co_code[self.pc] == 0x15: # BINARY_DIVIDE
+            print('BINARY_DIVIDE')
+            # pop the op number
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos1/tos).to_int(32).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        elif self.co_code[self.pc] == 0x16: # BINARY_MODULO
+            print('BINARY_MODULO')
+            # pop the op number
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos1%tos).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1            
+
+        elif self.co_code[self.pc] == 0x18: # BINARY_SUBTRACT
+            print('BINARY_SUBTRACT')
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos1-tos).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        
+        elif self.co_code[self.pc] == 0x1a: # BINARY_FLOOR_DIVIDE
+            print('BINARY_FLOOR_DIVIDE')
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos1 // tos).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
+        elif self.co_code[self.pc] == 0x1a: # BINARY_TRUE_DIVIDE
+            print('BINARY_TRUE_DIVIDE')
+            tos = int.from_bytes(self.stack.pop())
+            tos1 = int.from_bytes(self.stack.pop())
+            result = (tos1 / tos).to_bytes(32)
+            self.stack.append(result)
+            self.pc += 1
+
         elif self.co_code[self.pc] == 0x64: # LOAD_CONST
             param = self.co_code[self.pc+1]
             print('LOAD_CONST', param)
@@ -145,6 +215,13 @@ class VM:
             self.stack = self.stack[:-2-param]
             self.stack.append(result)
             self.pc += 2
+
+        elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
+            param = self.co_code[self.pc+1]
+            print('LOAD_METHOD', param)
+            self.stack.append(self.co_names[param])
+            self.pc += 2
+    
 
         print('stack', self.stack)
         print('---')
