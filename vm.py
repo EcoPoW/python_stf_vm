@@ -65,7 +65,7 @@ class VM:
             self.stack.append(left+right)
             self.pc += 2
 
-        elif self.co_code[self.pc] == 0x17: # BINARY_SUBTRACT
+        elif self.co_code[self.pc] == 0x18: # BINARY_SUBTRACT
             right = self.stack.pop()
             left = self.stack.pop()
             print('BINARY_SUBTRACT', left, right)
@@ -124,13 +124,28 @@ class VM:
 
         elif self.co_code[self.pc] == 0x6b: # COMPARE_OP
             param = self.co_code[self.pc+1]
-            val = self.stack.pop()
-            print('COMPARE_OP', param, val)
-            if param == val:
-                self.stack.append(True)
-            else:
-                self.stack.append(False)
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('COMPARE_OP', param, left, right)
+            if param == 0:
+                self.stack.append(left < right)
+            elif param == 1:
+                self.stack.append(left <= right)
+            elif param == 2:
+                self.stack.append(left == right)
+            elif param == 3:
+                self.stack.append(left != right)
+            elif param == 4:
+                self.stack.append(left > right)
+            elif param == 5:
+                self.stack.append(left >= right)
+
             self.pc += 2
+
+        elif self.co_code[self.pc] == 0x71: # JUMP_ABSOLUTE
+            param = self.co_code[self.pc+1]
+            print('JUMP_ABSOLUTE', param)
+            self.pc = param
 
         elif self.co_code[self.pc] == 0x72: # POP_JUMP_IF_FALSE
             param = self.co_code[self.pc+1]
