@@ -44,6 +44,41 @@ class VM:
             self.stack.pop()
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x13: # BINARY_POWER
+            exp = self.stack.pop()
+            base = self.stack.pop()
+            print('BINARY_POWER', base, exp)
+            self.stack.append(base ** exp)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x14: # BINARY_MULTIPLY
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_MULTIPLY', left, right)
+            self.stack.append(left*right)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x17: # BINARY_ADD
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_ADD', left, right)
+            self.stack.append(left+right)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x17: # BINARY_SUBTRACT
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_SUBTRACT', left, right)
+            self.stack.append(left-right)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x1b: # BINARY_TRUE_DIVIDE
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_TRUE_DIVIDE', left, right)
+            self.stack.append(left/right)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x37: # INPLACE_ADD
             val = self.stack.pop()
             obj = self.stack.pop()
