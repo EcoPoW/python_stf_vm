@@ -4,11 +4,9 @@ import codeop
 import hashlib
 import functools
 
-import stf
-
 
 class VM:
-    def import_function(self, function_object):
+    def import_function(self, function_object, global_vars = {}):
         self.co_code = function_object.__code__.co_code
         self.co_varnames = function_object.__code__.co_varnames
         self.co_consts = function_object.__code__.co_consts
@@ -17,13 +15,26 @@ class VM:
 
         self.pc = 0
         self.stack = []
-        self.vars = {}
+        self.local_vars = {}
+        self.global_vars = global_vars
+
+    def import_module(self, module_object):
+        self.co_code = function_object.__code__.co_code
+        self.co_varnames = function_object.__code__.co_varnames
+        self.co_consts = function_object.__code__.co_consts
+        self.co_names = function_object.__code__.co_names
+        self.co_argcount = function_object.__code__.co_argcount
+
+        self.pc = 0
+        self.stack = []
+        self.local_vars = {}
+        self.global_vars = global_vars
 
     def run(self, function_name, args):
         assert len(args) == self.co_argcount
         self.args = args
         for i, v in enumerate(self.args):
-            self.vars[self.co_varnames[i]] = v
+            self.local_vars[self.co_varnames[i]] = v
         print('---')
 
         pc = -1
@@ -34,8 +45,8 @@ class VM:
                 print("return value", r)
 
     def step(self):
-        print(self.pc, hex(self.co_code[self.pc]))
-        print('vars', self.vars)
+        print('PC', self.pc, hex(self.co_code[self.pc]))
+        print('local_vars', self.local_vars)
         if self.co_code[self.pc] == 0x0: # NOP
             print('NOP')
 
@@ -109,6 +120,14 @@ class VM:
             print('RETURN_VALUE', val)
             return val
 
+        elif self.co_code[self.pc] == 0x61: # STORE_GLOBAL
+            param = self.co_code[self.pc+1]
+            val = self.stack.pop()
+            global_var = self.co_names[param]
+            print('STORE_GLOBAL', param, global_var, val)
+            self.global_vars[global_var] = val
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x64: # LOAD_CONST
             param = self.co_code[self.pc+1]
             print('LOAD_CONST', param)
@@ -156,11 +175,19 @@ class VM:
             else:
                 self.pc = param
 
+        elif self.co_code[self.pc] == 0x74: # LOAD_GLOBAL
+            param = self.co_code[self.pc+1]
+            global_var = self.co_names[param]
+            print('LOAD_GLOBAL', param, global_var)
+            val = self.global_vars[global_var]
+            self.stack.append(val)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x7c: # LOAD_FAST
             param = self.co_code[self.pc+1]
             print('LOAD_FAST', param)
             varname = self.co_varnames[param]
-            val = self.vars[varname]
+            val = self.local_vars[varname]
             self.stack.append(val)
             self.pc += 2
 
@@ -170,7 +197,7 @@ class VM:
             # print('STORE_FAST', self.co_varnames[param])
             var = self.co_varnames[param]
             val = self.stack.pop()
-            self.vars[var] = val
+            self.local_vars[var] = val
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
@@ -194,45 +221,3 @@ class VM:
 
         print('stack', self.stack)
         print('---')
-
-
-if __name__ == '__main__':
-    c = codeop.compile_command('''
-#a=1
-#b=2
-
-def chain_stf(state, data):
-    subchains = state.get('subchains', {})
-    subchains.update(data.get('subchains', {}))
-    new_state = {}
-    new_state['subchains'] = subchains
-    return new_state
-
-''', symbol="exec")
-    # print(c)
-    # print(c.co_code)
-    # print(c.co_consts[0].co_code)
-    # print(stf.chain_stf.__code__.co_code)
-    # print(hashlib.sha256(stf.chain_stf.__code__.co_code).hexdigest())
-
-    dis.dis(stf.chain_stf)
-    print('co_code', [hex(i) for i in stf.chain_stf.__code__.co_code])
-    # print(stf.chain_stf.__code__)
-
-    print('co_name', stf.chain_stf.__code__.co_name)
-    print('co_varnames', stf.chain_stf.__code__.co_varnames)
-    print('co_argcount', stf.chain_stf.__code__.co_argcount)
-
-    print('co_consts', stf.chain_stf.__code__.co_consts)
-    print('co_names', stf.chain_stf.__code__.co_names) # for method
-
-    print('co_stacksize', stf.chain_stf.__code__.co_stacksize)
-    print('co_posonlyargcount', stf.chain_stf.__code__.co_posonlyargcount)
-    print('co_nlocals', stf.chain_stf.__code__.co_nlocals)
-    print('co_kwonlyargcount', stf.chain_stf.__code__.co_kwonlyargcount)
-    print('co_cellvars', stf.chain_stf.__code__.co_cellvars)
-    print('co_freevars', stf.chain_stf.__code__.co_freevars)
-
-    vm = VM()
-    vm.import_function(stf.chain_stf)
-    vm.run('chain_stf', [{}, {'subchains': {1:2}}])
