@@ -45,4 +45,4 @@ def chain_stf(state, data):
 
     vm = vm.VM()
     vm.import_function(stf.chain_stf)
-    vm.run('chain_stf', [{}, {'subchains': {1:2}}])
+    vm.run([{}, {'subchains': {1:2}}], 'chain_stf')

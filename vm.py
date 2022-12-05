@@ -3,9 +3,14 @@ import dis
 import codeop
 import hashlib
 import functools
-
+import types
+import mock
 
 class VM:
+    def __init__(self):
+        self.module_object = None
+        self.co_code = None
+
     def import_function(self, function_object, global_vars = {}):
         self.co_code = function_object.__code__.co_code
         self.co_varnames = function_object.__code__.co_varnames
@@ -19,19 +24,20 @@ class VM:
         self.global_vars = global_vars
 
     def import_module(self, module_object):
-        self.co_code = function_object.__code__.co_code
-        self.co_varnames = function_object.__code__.co_varnames
-        self.co_consts = function_object.__code__.co_consts
-        self.co_names = function_object.__code__.co_names
-        self.co_argcount = function_object.__code__.co_argcount
+        self.module_object = module_object
 
-        self.pc = 0
-        self.stack = []
-        self.local_vars = {}
-        self.global_vars = global_vars
+    def run(self, args, function_name = None):
+        if self.module_object and function_name:
+            function_object = self.module_object.__dict__[function_name]
+            assert type(function_object) == types.FunctionType
+            global_vars = {'msg': mock.msg}
+            self.import_function(function_object, global_vars)
 
-    def run(self, function_name, args):
-        assert len(args) == self.co_argcount
+        assert self.co_code
+        # assert self.co_varnames
+        # assert self.co_consts
+        # assert self.co_names
+        assert self.co_argcount == len(args)
         self.args = args
         for i, v in enumerate(self.args):
             self.local_vars[self.co_varnames[i]] = v
