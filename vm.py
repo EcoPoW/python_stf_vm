@@ -10,6 +10,7 @@ class VM:
     def __init__(self):
         self.module_object = None
         self.co_code = None
+        self.global_vars = {}
 
     def import_function(self, function_object, global_vars = {}):
         self.co_code = function_object.__code__.co_code
@@ -21,17 +22,22 @@ class VM:
         self.pc = 0
         self.stack = []
         self.local_vars = {}
-        self.global_vars = global_vars
+        if global_vars:
+            self.global_vars = global_vars
 
     def import_module(self, module_object):
+        for k, v in module_object.__dict__.items():
+            if not k.startswith('__') and type(v) not in [type, types.FunctionType]:
+                self.global_vars[k] = v
+
         self.module_object = module_object
 
     def run(self, args, function_name = None):
         if self.module_object and function_name:
             function_object = self.module_object.__dict__[function_name]
             assert type(function_object) == types.FunctionType
-            global_vars = {'msg': mock.msg}
-            self.import_function(function_object, global_vars)
+            self.global_vars['msg'] = mock.msg
+            self.import_function(function_object)
 
         assert self.co_code
         # assert self.co_varnames
@@ -41,6 +47,15 @@ class VM:
         self.args = args
         for i, v in enumerate(self.args):
             self.local_vars[self.co_varnames[i]] = v
+
+        print('\n')
+        print('global_vars', self.global_vars)
+        print('\n')
+        print('co_code', [hex(i) for i in self.co_code])
+        print('co_varnames', self.co_varnames)
+        print('co_names', self.co_names) # for method
+        print('co_consts', self.co_consts)
+        print('co_argcount', self.co_argcount)
         print('---')
 
         pc = -1
@@ -145,6 +160,15 @@ class VM:
             print('BUILD_MAP', param)
             if param == 0:
                 self.stack.append({})
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x6a: # LOAD_ATTR
+            param = self.co_code[self.pc+1]
+            attr = self.co_names[param]
+            obj = self.stack.pop()
+            val = obj.__dict__[attr]
+            print('LOAD_ATTR', param, attr, val)
+            self.stack.append(val)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x6b: # COMPARE_OP

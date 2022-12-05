@@ -24,3 +24,5 @@ if __name__ == '__main__':
     vm = vm.VM()
     vm.import_module(mod)
     vm.run([], 'init')
+    vm.run([1000], 'mint')
+    # vm.run([1000], 'mint')

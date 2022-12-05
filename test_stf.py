@@ -26,16 +26,9 @@ def chain_stf(state, data):
     # print(hashlib.sha256(stf.chain_stf.__code__.co_code).hexdigest())
 
     dis.dis(stf.chain_stf)
-    print('co_code', [hex(i) for i in stf.chain_stf.__code__.co_code])
     # print(stf.chain_stf.__code__)
 
     print('co_name', stf.chain_stf.__code__.co_name)
-    print('co_varnames', stf.chain_stf.__code__.co_varnames)
-    print('co_argcount', stf.chain_stf.__code__.co_argcount)
-
-    print('co_consts', stf.chain_stf.__code__.co_consts)
-    print('co_names', stf.chain_stf.__code__.co_names) # for method
-
     print('co_stacksize', stf.chain_stf.__code__.co_stacksize)
     print('co_posonlyargcount', stf.chain_stf.__code__.co_posonlyargcount)
     print('co_nlocals', stf.chain_stf.__code__.co_nlocals)
@@ -46,3 +39,9 @@ def chain_stf(state, data):
     vm = vm.VM()
     vm.import_function(stf.chain_stf)
     vm.run([{}, {'subchains': {1:2}}], 'chain_stf')
+
+    # print('co_code', [hex(i) for i in stf.chain_stf.__code__.co_code])
+    # print('co_varnames', stf.chain_stf.__code__.co_varnames)
+    # print('co_consts', stf.chain_stf.__code__.co_consts)
+    # print('co_names', stf.chain_stf.__code__.co_names) # for method
+    # print('co_argcount', stf.chain_stf.__code__.co_argcount)
