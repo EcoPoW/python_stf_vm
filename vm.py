@@ -30,6 +30,14 @@ class VM:
             if not k.startswith('__') and type(v) not in [type, types.FunctionType]:
                 self.global_vars[k] = v
 
+        self.global_vars['type'] = type
+        self.global_vars['int'] = int
+        self.global_vars['str'] = str
+        self.global_vars['bytes'] = bytes
+        self.global_vars['set'] = set
+        self.global_vars['dict'] = dict
+        self.global_vars['list'] = list
+        self.global_vars['AssertionError'] = AssertionError
         self.module_object = module_object
 
     def run(self, args, function_name = None):
@@ -63,7 +71,9 @@ class VM:
             pc = self.pc
             r = self.step()
             if r:
-                print("return value", r)
+                print('return value', r)
+        print('---')
+        print('global_vars', self.global_vars)
 
     def step(self):
         print('PC', self.pc, hex(self.co_code[self.pc]))
@@ -74,6 +84,38 @@ class VM:
         elif self.co_code[self.pc] == 0x1: # POP_TOP
             print('POP_TOP')
             self.stack.pop()
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x2: # ROT_TWO
+            print('ROT_TWO')
+            first = self.stack.pop()
+            second = self.stack.pop()
+            self.stack.append(first)
+            self.stack.append(second)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x3: # ROT_THREE
+            print('ROT_THREE')
+            first = self.stack.pop()
+            second = self.stack.pop()
+            third = self.stack.pop()
+            self.stack.append(first)
+            self.stack.append(third)
+            self.stack.append(second)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x4: # DUP_TOP
+            print('DUP_TOP')
+            first = self.stack[-1]
+            self.stack.append(first)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x5: # DUP_TOP_TWO
+            print('DUP_TOP_TWO')
+            second = self.stack[-2]
+            first = self.stack[-1]
+            self.stack.append(second)
+            self.stack.append(first)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x13: # BINARY_POWER
@@ -188,6 +230,8 @@ class VM:
                 self.stack.append(left > right)
             elif param == 5:
                 self.stack.append(left >= right)
+            elif param == 8:
+                self.stack.append(left is right)
 
             self.pc += 2
 
@@ -204,6 +248,15 @@ class VM:
                 self.pc += 2
             else:
                 self.pc = param
+
+        elif self.co_code[self.pc] == 0x73: # POP_JUMP_IF_TRUE
+            param = self.co_code[self.pc+1]
+            print('POP_JUMP_IF_TRUE', param)
+            val = self.stack.pop()
+            if val:
+                self.pc = param
+            else:
+                self.pc += 2
 
         elif self.co_code[self.pc] == 0x74: # LOAD_GLOBAL
             param = self.co_code[self.pc+1]
@@ -228,6 +281,22 @@ class VM:
             var = self.co_varnames[param]
             val = self.stack.pop()
             self.local_vars[var] = val
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x82: # RAISE_VARARGS
+            param = self.co_code[self.pc+1]
+            print('RAISE_VARARGS', param)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x83: # CALL_FUNCTION
+            param = self.co_code[self.pc+1]
+            print('CALL_FUNCTION', param)
+            func = self.stack[-1-param]
+            params = self.stack[-param:]
+            result = functools.partial(func, *params)()
+            print('result', result)
+            self.stack = self.stack[:-1-param]
+            self.stack.append(result)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
