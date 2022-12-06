@@ -146,6 +146,13 @@ class VM:
             self.stack.append(left-right)
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x19: # BINARY_SUBSCR
+            idx = self.stack.pop()
+            obj = self.stack.pop()
+            self.stack.append(obj[idx])
+            print('BINARY_SUBSCR')
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x1b: # BINARY_TRUE_DIVIDE
             right = self.stack.pop()
             left = self.stack.pop()
@@ -286,7 +293,10 @@ class VM:
         elif self.co_code[self.pc] == 0x82: # RAISE_VARARGS
             param = self.co_code[self.pc+1]
             print('RAISE_VARARGS', param)
-            self.pc += 2
+            if param == 1:
+                first = self.stack.pop()
+                raise first
+            # self.pc += 2
 
         elif self.co_code[self.pc] == 0x83: # CALL_FUNCTION
             param = self.co_code[self.pc+1]
@@ -297,6 +307,24 @@ class VM:
             print('result', result)
             self.stack = self.stack[:-1-param]
             self.stack.append(result)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x85: # BUILD_SLICE
+            param = self.co_code[self.pc+1]
+            print('BUILD_SLICE', param)
+
+            if param == 1:
+                first = self.stack.pop()
+                self.stack.append(slice(first))
+            elif param == 2:
+                second = self.stack.pop()
+                first = self.stack.pop()
+                self.stack.append(slice(first, second))
+            elif param == 3:
+                third = self.stack.pop()
+                second = self.stack.pop()
+                first = self.stack.pop()
+                self.stack.append(slice(first, second, third))
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD

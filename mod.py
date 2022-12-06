@@ -20,13 +20,15 @@ def mint(amount):
 def transfer(user, amount):
     assert type(amount) is int and amount > 0
     global total, users
-    assert users[msg.sender] > amount
+    assert users[msg.sender] >= amount
     users[msg.sender] -= amount
     users.setdefault(user, 0)
     users[user] += amount
 
 if __name__ == '__main__':
     init()
+    mint(1000)
+    transfer('0x1111', 1000)
 
 
 # bad example

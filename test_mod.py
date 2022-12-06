@@ -25,4 +25,4 @@ if __name__ == '__main__':
     vm.import_module(mod)
     vm.run([], 'init')
     vm.run([1000], 'mint')
-    vm.run(['0x1111', 100], 'transfer')
+    vm.run(['0x1111', 1000], 'transfer')
