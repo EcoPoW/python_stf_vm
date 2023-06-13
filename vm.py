@@ -132,6 +132,13 @@ class VM:
             self.stack.append(left*right)
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x16: # BINARY_MODULO
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_MODULO', left, right)
+            self.stack.append(left%right)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x17: # BINARY_ADD
             right = self.stack.pop()
             left = self.stack.pop()
