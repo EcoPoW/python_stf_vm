@@ -209,8 +209,11 @@ class VM:
             print('BUILD_TUPLE', argc)
             # print('BUILD_TUPLE', self.co_consts)
             print('BUILD_TUPLE', self.stack)
-            values = self.stack[-argc:]
-            self.stack = self.stack[:-argc]
+            if argc:
+                values = self.stack[-argc:]
+                self.stack = self.stack[:-argc]
+            else:
+                values = []
             self.stack.append(tuple(values))
             print('BUILD_TUPLE', self.stack)
             self.pc += 2
@@ -218,8 +221,13 @@ class VM:
         elif self.co_code[self.pc] == 0x69: # BUILD_MAP
             param = self.co_code[self.pc+1]
             print('BUILD_MAP', param)
-            if param == 0:
-                self.stack.append({})
+            result = {}
+            for i in range(param):
+                value = self.stack.pop()
+                key = self.stack.pop()
+                result[key] = value
+            self.stack.append(result)
+            print('BUILD_MAP', result)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x6a: # LOAD_ATTR
@@ -351,6 +359,16 @@ class VM:
             val = obj(**dict(zip(keys, values)))
             self.stack.append(val)
             print('CALL_FUNCTION_KW', val)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x8e: # CALL_FUNCTION_EX
+            argc = self.co_code[self.pc+1]
+            print('CALL_FUNCTION_EX', argc)
+            kargs = self.stack.pop()
+            args = self.stack.pop()
+            obj = self.stack.pop()
+            val = obj(*args, **kargs)
+            self.stack.append(val)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
