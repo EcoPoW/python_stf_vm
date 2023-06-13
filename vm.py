@@ -204,6 +204,17 @@ class VM:
             self.stack.append(self.co_consts[param])
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x66: # BUILD_TUPLE
+            argc = self.co_code[self.pc+1]
+            print('BUILD_TUPLE', argc)
+            # print('BUILD_TUPLE', self.co_consts)
+            print('BUILD_TUPLE', self.stack)
+            values = self.stack[-argc:]
+            self.stack = self.stack[:-argc]
+            self.stack.append(tuple(values))
+            print('BUILD_TUPLE', self.stack)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x69: # BUILD_MAP
             param = self.co_code[self.pc+1]
             print('BUILD_MAP', param)
