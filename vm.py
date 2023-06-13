@@ -153,6 +153,13 @@ class VM:
             print('BINARY_SUBSCR')
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x1a: # BINARY_FLOOR_DIVIDE
+            right = self.stack.pop()
+            left = self.stack.pop()
+            print('BINARY_FLOOR_DIVIDE', left, right)
+            self.stack.append(left//right)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x1b: # BINARY_TRUE_DIVIDE
             right = self.stack.pop()
             left = self.stack.pop()
