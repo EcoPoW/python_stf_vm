@@ -327,6 +327,21 @@ class VM:
                 self.stack.append(slice(first, second, third))
             self.pc += 2
 
+
+        elif self.co_code[self.pc] == 0x8d: # CALL_FUNCTION_KW
+            argc = self.co_code[self.pc+1]
+            print('CALL_FUNCTION_KW', self.stack)
+            keys = self.stack.pop()
+            values = self.stack[-argc:]
+            self.stack = self.stack[:-argc]
+            obj = self.stack.pop()
+            print('CALL_FUNCTION_KW', obj)
+            print('CALL_FUNCTION_KW', dir(obj))
+            val = obj(**dict(zip(keys, values)))
+            self.stack.append(val)
+            print('CALL_FUNCTION_KW', val)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
             param = self.co_code[self.pc+1]
             print('LOAD_METHOD', param)
