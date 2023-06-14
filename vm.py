@@ -37,6 +37,7 @@ class VM:
         self.global_vars['set'] = set
         self.global_vars['dict'] = dict
         self.global_vars['list'] = list
+        self.global_vars['print'] = print
         self.global_vars['AssertionError'] = AssertionError
         self.module_object = module_object
 
