@@ -233,6 +233,20 @@ class VM:
             print('BUILD_TUPLE', self.stack)
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x67: # BUILD_LIST
+            argc = self.co_code[self.pc+1]
+            print('BUILD_LIST', argc)
+            # print('BUILD_LIST', self.co_consts)
+            print('BUILD_LIST', self.stack)
+            if argc:
+                values = self.stack[-argc:]
+                self.stack = self.stack[:-argc]
+            else:
+                values = []
+            self.stack.append(list(values))
+            print('BUILD_LIST', self.stack)
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x69: # BUILD_MAP
             param = self.co_code[self.pc+1]
             print('BUILD_MAP', param)
