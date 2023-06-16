@@ -400,6 +400,21 @@ class VM:
             self.stack.append(val)
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x9b: # FORMAT_VALUE
+            param = self.co_code[self.pc+1]
+            format_string = self.stack.pop()
+            val = self.stack.pop()
+            self.stack.append(format(val, format_string))
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x9d: # BUILD_STRING
+            argc = self.co_code[self.pc+1]
+            print('BUILD_STRING', argc)
+            values = self.stack[-argc:]
+            self.stack = self.stack[:-argc]
+            self.stack.append(''.join(values))
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0xa0: # LOAD_METHOD
             param = self.co_code[self.pc+1]
             print('LOAD_METHOD', param)
