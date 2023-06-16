@@ -409,10 +409,13 @@ class VM:
         elif self.co_code[self.pc] == 0xa1: # CALL_METHOD
             param = self.co_code[self.pc+1]
             print('CALL_METHOD', param)
-            # print('CALL_METHOD', self.stack[-2-param])
+            print('CALL_METHOD', self.stack)
             var = self.stack[-2-param]
             method = self.stack[-1-param]
-            params = self.stack[-param:]
+            if param:
+                params = self.stack[-param:]
+            else:
+                params = []
             result = functools.partial(var.__getattribute__(method), *params)()
             print('result', result)
             self.stack = self.stack[:-2-param]
