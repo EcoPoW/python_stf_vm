@@ -1,5 +1,6 @@
 
 import hashlib
+import time
 
 import tornado.escape
 import web3
@@ -26,6 +27,7 @@ _sender = None
 
 _mpt = database.get_mpt()
 _mpt.update(b'%s_balance_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' % CONTRACT_ADDRESS, tornado.escape.json_encode(10**20))
+_mpt.update(b'%s_total' % CONTRACT_ADDRESS, tornado.escape.json_encode(10**20))
 print('root', _mpt.root())
 print('root hash', _mpt.root_hash())
 
@@ -51,24 +53,19 @@ def mint(_to, _amount):
     amount = web3.main.to_int(hexstr=_amount)
     print('mint', to_addr, amount)
 
-    prev_contract_hash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
-    print('mint', prev_contract_hash)
-    msgstate_bytes = db.get(b'msgstate_%s' % prev_contract_hash)
-    msgstate = tornado.escape.json_decode(msgstate_bytes)
-    print('mint', msgstate)
-    msg = db.get(b'msg_%s' % prev_contract_hash)
-    print('mint', msg)
+    current_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, to_addr.encode('utf8')))
+    current_amount = tornado.escape.json_decode(current_amount_json)
+    new_amount = current_amount + amount
+    print('mint', new_amount)
+    new_amount_json = tornado.escape.json_encode(new_amount)
+    _mpt.update(b'%s_balance_%s' % (CONTRACT_ADDRESS, to_addr.encode('utf8')), new_amount_json.encode('utf8'))
 
-    new_msg = [prev_contract_hash.decode('utf8'), '', to_addr, amount]
-    print('mint', to_addr, amount)
-    new_contract_state = msgstate
-    new_contract_state['balance'].setdefault(to_addr, 0)
-    new_contract_state['balance'][to_addr] += amount
-    new_contract_hash = hashlib.sha256(tornado.escape.json_encode(new_msg).encode('utf8')).hexdigest()
-    new_contract_hash_bytes = new_contract_hash.encode('utf8')
-    db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(new_contract_state).encode('utf8'))
-    db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-    db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
+    current_total_json = _mpt.get(b'%s_total' % CONTRACT_ADDRESS)
+    current_total = tornado.escape.json_decode(current_total_json)
+    new_total = current_total + amount
+    print('mint', new_total)
+    new_total_json = tornado.escape.json_encode(new_total)
+    _mpt.update(b'%s_total' % CONTRACT_ADDRESS, new_total_json.encode('utf8'))
 
 
 def approve():
@@ -175,4 +172,9 @@ interface_map = {
 #     db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
 
 if __name__ == '__main__':
-    balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266')
+    mint('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0x1000')
+
+    # t0 = time.time()
+    # for i in range(10000):
+    #     balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266')
+    # print(time.time() - t0)
