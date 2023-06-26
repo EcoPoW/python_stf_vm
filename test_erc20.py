@@ -1,6 +1,7 @@
 
 import dis
 import types
+import time
 
 import contract_erc20 as mod
 import vm
@@ -26,5 +27,7 @@ if __name__ == '__main__':
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'mint')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'transfer')
+    t0 = time.time()
     for i in range(10000):
         vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'], 'balanceOf')
+    print(time.time() - t0)

@@ -115,7 +115,7 @@ def balanceOf(user):
     user_addr = web3.main.to_checksum_address(user_bytes[-20:])
     amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, user_addr.encode('utf8')))
     amount = tornado.escape.json_decode(amount_json)
-    print('balanceOf', amount)
+    # print('balanceOf', amount)
 
     return f'0x{amount:0>64x}'
     # return '0x0000000000000000000000000000000000000000000000000000000000001000'
