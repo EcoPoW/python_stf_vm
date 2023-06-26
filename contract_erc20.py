@@ -4,9 +4,11 @@ import time
 
 import tornado.escape
 import web3
-import eth_utils
 
 import database
+
+class address(str):pass
+class uint256(int):pass
 
 # function name() public view returns (string)
 # function symbol() public view returns (string)
@@ -47,7 +49,7 @@ print('root hash', _mpt.root_hash())
 #     pass
 
 
-def mint(_to, _amount):
+def mint(_to:address, _amount:uint256):
     to_bytes = web3.main.to_bytes(hexstr=_to)
     to_addr = web3.main.to_checksum_address(to_bytes[-20:])
     amount = web3.main.to_int(hexstr=_amount)
@@ -72,15 +74,15 @@ def mint(_to, _amount):
     _mpt.update(b'%s_total' % CONTRACT_ADDRESS, new_total_json.encode('utf8'))
 
 
-def approve():
+def approve(_spender:address, _value:uint256):
     pass
 
 
-def allowance():
+def allowance(_owner:address, _spender:address):
     pass
 
 
-def transfer(_to, _amount):
+def transfer(_to:address, _amount:uint256):
     to_bytes = web3.main.to_bytes(hexstr=_to)
     to_addr = web3.main.to_checksum_address(to_bytes[-20:])
     amount = web3.main.to_int(hexstr=_amount)
@@ -110,11 +112,11 @@ def transfer(_to, _amount):
     _mpt.update(b'%s_balance_%s' % (CONTRACT_ADDRESS, to_addr.encode('utf8')), new_amount_json.encode('utf8'))
 
 
-def transferFrom():
+def transferFrom(_from:address, _to:address, _value:uint256):
     print('transferFrom')
 
 
-def balanceOf(user):
+def balanceOf(user:address):
     user_bytes = web3.main.to_bytes(hexstr=user)
     user_addr = web3.main.to_checksum_address(user_bytes[-20:])
     amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, user_addr.encode('utf8')))
@@ -140,29 +142,6 @@ def decimals():
 def totalSupply():
     return 0
 
-
-interface_map = {
-    '0x'+eth_utils.keccak(b'transfer(address,uint256)').hex()[:8]: transfer,
-    '0x'+eth_utils.keccak(b'balanceOf(address)').hex()[:8]: balanceOf,
-    '0x'+eth_utils.keccak(b'decimals()').hex()[:8]: decimals,
-    '0x'+eth_utils.keccak(b'allowance(address,address)').hex()[:8]: allowance,
-    '0x'+eth_utils.keccak(b'symbol()').hex()[:8]: symbol,
-    '0x'+eth_utils.keccak(b'totalSupply()').hex()[:8]: totalSupply,
-    '0x'+eth_utils.keccak(b'name()').hex()[:8]: name,
-    '0x'+eth_utils.keccak(b'approve(address,uint256)').hex()[:8]: approve,
-    '0x'+eth_utils.keccak(b'transferFrom(address,address,uint256)').hex()[:8]: transferFrom,
-    '0x'+eth_utils.keccak(b'mint(address,uint256)').hex()[:8]: mint,
-}
-
-# transfer(address,uint256)： 0xa9059cbb
-# balanceOf(address)：0x70a08231
-# decimals()：0x313ce567
-# allowance(address,address)： 0xdd62ed3e
-# symbol()：0x95d89b41
-# totalSupply()：0x18160ddd
-# name()：0x06fdde03
-# approve(address,uint256)：0x095ea7b3
-# transferFrom(address,address,uint256)： 0x23b872dd
 
 
 # db = database.get_conn()
