@@ -24,10 +24,10 @@ CONTRACT_ADDRESS = b'0x0000000000000000000000000000000000000001'
 
 _sender = None
 
-_balance = database.get_mpt()
-_balance.update(b'%s_balance_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' % CONTRACT_ADDRESS, str(10**20).encode('utf8'))
-print('root', _balance.root())
-print('root hash', _balance.root_hash())
+_mpt = database.get_mpt()
+_mpt.update(b'%s_balance_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' % CONTRACT_ADDRESS, tornado.escape.json_encode(10**20))
+print('root', _mpt.root())
+print('root hash', _mpt.root_hash())
 
 # hardhat test Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 # Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -113,13 +113,9 @@ def transferFrom():
 def balanceOf(user):
     user_bytes = web3.main.to_bytes(hexstr=user)
     user_addr = web3.main.to_checksum_address(user_bytes[-20:])
-    prev_contract_hash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
-    print('balanceOf', prev_contract_hash)
-    msgstate_bytes = db.get(b'msgstate_%s' % prev_contract_hash)
-    msgstate = tornado.escape.json_decode(msgstate_bytes)
-    print('balanceOf', msgstate)
-    # amount = _balance.get(user_addr, 0)
-    amount = msgstate['balance'].get(user_addr, 0)
+    amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, user_addr.encode('utf8')))
+    amount = tornado.escape.json_decode(amount_json)
+    print('balanceOf', amount)
 
     return f'0x{amount:0>64x}'
     # return '0x0000000000000000000000000000000000000000000000000000000000001000'
@@ -164,15 +160,19 @@ interface_map = {
 # approve(address,uint256)：0x095ea7b3
 # transferFrom(address,address,uint256)： 0x23b872dd
 
-db = database.get_conn()
-blockhash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
-print(blockhash)
-if not blockhash:
-    contract_state = {'balance': _balance}
-    new_msg = ['0'*64, '', '', contract_state]
-    new_contract_hash = hashlib.sha256(tornado.escape.json_encode(new_msg).encode('utf8')).hexdigest()
-    new_contract_hash_bytes = new_contract_hash.encode('utf8')
 
-    db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(contract_state).encode('utf8'))
-    db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-    db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
+# db = database.get_conn()
+# blockhash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
+# print(blockhash)
+# if not blockhash:
+#     contract_state = {'balance': _balance}
+#     new_msg = ['0'*64, '', '', contract_state]
+#     new_contract_hash = hashlib.sha256(tornado.escape.json_encode(new_msg).encode('utf8')).hexdigest()
+#     new_contract_hash_bytes = new_contract_hash.encode('utf8')
+
+#     db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(contract_state).encode('utf8'))
+#     db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
+#     db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
+
+if __name__ == '__main__':
+    balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266')

@@ -24,5 +24,7 @@ if __name__ == '__main__':
     vm = vm.VM()
     vm.import_module(mod)
     # vm.run([], 'init')
-    vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'mint')
-    # vm.run(['0x1111', 1000], 'transfer')
+    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'mint')
+    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'transfer')
+    for i in range(10000):
+        vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'], 'balanceOf')
