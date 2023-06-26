@@ -20,12 +20,15 @@ import database
 # event Transfer(address indexed _from, address indexed _to, uint256 _value)
 # event Approval(address indexed _owner, address indexed _spender, uint256 _value)
 
+CONTRACT_ADDRESS = b'0x0000000000000000000000000000000000000001'
 
 _sender = None
 
-_balance = {
-    '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266': 10**20
-}
+_balance = database.get_mpt()
+_balance.update(b'%s_balance_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' % CONTRACT_ADDRESS, str(10**20).encode('utf8'))
+print('root', _balance.root())
+print('root hash', _balance.root_hash())
+
 # hardhat test Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 # Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
@@ -48,7 +51,7 @@ def mint(_to, _amount):
     amount = web3.main.to_int(hexstr=_amount)
     print('mint', to_addr, amount)
 
-    prev_contract_hash = db.get(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'))
+    prev_contract_hash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
     print('mint', prev_contract_hash)
     msgstate_bytes = db.get(b'msgstate_%s' % prev_contract_hash)
     msgstate = tornado.escape.json_decode(msgstate_bytes)
@@ -65,7 +68,7 @@ def mint(_to, _amount):
     new_contract_hash_bytes = new_contract_hash.encode('utf8')
     db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(new_contract_state).encode('utf8'))
     db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-    db.put(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'), new_contract_hash_bytes)
+    db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
 
 
 def approve():
@@ -78,10 +81,10 @@ def allowance():
 
 def transfer(_to, _amount):
     to_bytes = web3.main.to_bytes(hexstr=_to)
-    to_addr = web3.main.to_checksum_address(to_bytes[12:])
+    to_addr = web3.main.to_checksum_address(to_bytes[-20:])
     amount = web3.main.to_int(hexstr=_amount)
 
-    prev_contract_hash = db.get(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'))
+    prev_contract_hash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
     print('transfer', prev_contract_hash)
     msgstate_bytes = db.get(b'msgstate_%s' % prev_contract_hash)
     msgstate = tornado.escape.json_decode(msgstate_bytes)
@@ -100,7 +103,7 @@ def transfer(_to, _amount):
     new_contract_hash_bytes = new_contract_hash.encode('utf8')
     db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(new_contract_state).encode('utf8'))
     db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-    db.put(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'), new_contract_hash_bytes)
+    db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
 
 
 def transferFrom():
@@ -109,8 +112,8 @@ def transferFrom():
 
 def balanceOf(user):
     user_bytes = web3.main.to_bytes(hexstr=user)
-    user_addr = web3.main.to_checksum_address(user_bytes[12:])
-    prev_contract_hash = db.get(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'))
+    user_addr = web3.main.to_checksum_address(user_bytes[-20:])
+    prev_contract_hash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
     print('balanceOf', prev_contract_hash)
     msgstate_bytes = db.get(b'msgstate_%s' % prev_contract_hash)
     msgstate = tornado.escape.json_decode(msgstate_bytes)
@@ -162,7 +165,7 @@ interface_map = {
 # transferFrom(address,address,uint256)： 0x23b872dd
 
 db = database.get_conn()
-blockhash = db.get(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'))
+blockhash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
 print(blockhash)
 if not blockhash:
     contract_state = {'balance': _balance}
@@ -172,4 +175,4 @@ if not blockhash:
 
     db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(contract_state).encode('utf8'))
     db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-    db.put(b'chain_%s' % '0x0000000000000000000000000000000000000001'.encode('utf8'), new_contract_hash_bytes)
+    db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
