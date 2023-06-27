@@ -200,6 +200,11 @@ class VM:
             obj[key] = val
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x44: # GET_ITER
+            val = self.stack.pop()
+            self.stack.append(iter(val))
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x53: # RETURN_VALUE
             val = self.stack.pop()
             # print('RETURN_VALUE', val)
@@ -212,7 +217,20 @@ class VM:
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x58: # END_FINALLY
-            print('END_FINALLY')
+            # print('END_FINALLY')
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x5d: # FOR_ITER
+            it = self.stack[-1]
+            try:
+                n = it.__next__()
+                print('FOR_ITER', it, n)
+                self.stack.append(n)
+            except StopIteration:
+                param = self.co_code[self.pc+1]
+                print('FOR_ITER', param)
+                self.stack.pop()
+                self.pc += param
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x61: # STORE_GLOBAL
