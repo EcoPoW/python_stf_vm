@@ -205,6 +205,16 @@ class VM:
             # print('RETURN_VALUE', val)
             return val
 
+        elif self.co_code[self.pc] == 0x57: # POP_BLOCK
+            # param = self.co_code[self.pc+1]
+            val = self.stack.pop()
+            print('POP_BLOCK', val)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x58: # END_FINALLY
+            print('END_FINALLY')
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x61: # STORE_GLOBAL
             param = self.co_code[self.pc+1]
             val = self.stack.pop()
@@ -293,6 +303,11 @@ class VM:
 
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x6e: # JUMP_FORWARD
+            param = self.co_code[self.pc+1]
+            print('JUMP_FORWARD', param)
+            self.pc += param
+
         elif self.co_code[self.pc] == 0x71: # JUMP_ABSOLUTE
             param = self.co_code[self.pc+1]
             # print('JUMP_ABSOLUTE', param)
@@ -322,6 +337,12 @@ class VM:
             # print('LOAD_GLOBAL', param, global_var)
             val = self.global_vars[global_var]
             self.stack.append(val)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x7a: # SETUP_FINALLY
+            param = self.co_code[self.pc+1]
+            print('SETUP_FINALLY', param)
+            self.stack.append(param)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x7c: # LOAD_FAST
