@@ -34,8 +34,8 @@ import vm
 
 
 if __name__ == '__main__':
-    # dis.dis(mod)
-    # print(dir(mod))
+    dis.dis(mod)
+    print(dir(mod))
     # print(mod.__loader__)
     # print(mod.__builtins__)
     # print(mod.__package__)
@@ -57,11 +57,17 @@ if __name__ == '__main__':
 
 
     vm = vm.VM()
+    mod._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.import_module(mod)
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'mint')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'transfer')
     t0 = time.time()
-    for i in range(10):
-        vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'], 'balanceOf')
+    for i in range(2):
+        print('run mint')
+        vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0x1000'], 'mint')
+        print('run transfer')
+        vm.run(['0x0000000000000000000000000000000000000002', '0x1000'], 'transfer')
+        print('run balanceOf')
+        vm.run(['0x0000000000000000000000000000000000000002'], 'balanceOf')
     print(time.time() - t0)

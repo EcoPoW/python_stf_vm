@@ -1,12 +1,10 @@
 
-import dis
-import codeop
-import hashlib
 import functools
 import types
-import mock
 
 class VM:
+    '''for python 3.8'''
+
     def __init__(self):
         self.module_object = None
         self.co_code = None
@@ -38,6 +36,7 @@ class VM:
         self.global_vars['dict'] = dict
         self.global_vars['list'] = list
         self.global_vars['print'] = print
+        self.global_vars['open'] = open
         self.global_vars['AssertionError'] = AssertionError
         self.module_object = module_object
 
@@ -45,7 +44,6 @@ class VM:
         if self.module_object and function_name:
             function_object = self.module_object.__dict__[function_name]
             assert type(function_object) == types.FunctionType
-            self.global_vars['msg'] = mock.msg
             self.import_function(function_object)
 
         assert self.co_code
@@ -70,14 +68,18 @@ class VM:
         pc = -1
         while pc != self.pc:
             pc = self.pc
-            r = self.step()
-            # if r:
-            #     print('return value', r)
+            try:
+                r = self.step()
+                if r:
+                    print('return value', r)
+            except BaseException as e:
+                print('except', e.__class__.__name__, dir(e.__class__))
+            print('stack', self.stack)
         # print('---')
         # print('global_vars', self.global_vars)
 
     def step(self):
-        # print('PC', self.pc, hex(self.co_code[self.pc]))
+        print('PC', self.pc, hex(self.co_code[self.pc]))
         # print('local_vars', self.local_vars)
         if self.co_code[self.pc] == 0x0: # NOP
             print('NOP')
@@ -205,6 +207,16 @@ class VM:
             self.stack.append(iter(val))
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x51: # WITH_CLEANUP_START
+            # val = self.stack.pop()
+            # print('WITH_CLEANUP_START')
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x52: # WITH_CLEANUP_FINISH
+            # val = self.stack.pop()
+            # print('WITH_CLEANUP_FINISH')
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x53: # RETURN_VALUE
             val = self.stack.pop()
             # print('RETURN_VALUE', val)
@@ -212,9 +224,9 @@ class VM:
 
         elif self.co_code[self.pc] == 0x57: # POP_BLOCK
             # param = self.co_code[self.pc+1]
-            val = self.stack.pop()
-            print('POP_BLOCK', val)
-            self.pc += 2
+            delta = self.stack.pop()
+            print('POP_BLOCK', delta)
+            self.pc = delta
 
         elif self.co_code[self.pc] == 0x58: # END_FINALLY
             # print('END_FINALLY')
@@ -321,9 +333,13 @@ class VM:
 
             self.pc += 2
 
+        # elif self.co_code[self.pc] == 0x6c: # IMPORT_NAME
+        #     param = self.co_code[self.pc+1]
+        #     self.pc += 2
+
         elif self.co_code[self.pc] == 0x6e: # JUMP_FORWARD
             param = self.co_code[self.pc+1]
-            print('JUMP_FORWARD', param)
+            # print('JUMP_FORWARD', param)
             self.pc += param
 
         elif self.co_code[self.pc] == 0x71: # JUMP_ABSOLUTE
@@ -359,7 +375,7 @@ class VM:
 
         elif self.co_code[self.pc] == 0x7a: # SETUP_FINALLY
             param = self.co_code[self.pc+1]
-            print('SETUP_FINALLY', param)
+            # print('SETUP_FINALLY', param)
             self.stack.append(param)
             self.pc += 2
 
@@ -386,7 +402,7 @@ class VM:
             if param == 1:
                 first = self.stack.pop()
                 raise first
-            # self.pc += 2
+            self.pc += 2
 
         elif self.co_code[self.pc] == 0x83: # CALL_FUNCTION
             param = self.co_code[self.pc+1]
@@ -417,20 +433,20 @@ class VM:
                 self.stack.append(slice(first, second, third))
             self.pc += 2
 
-        elif self.co_code[self.pc] == 0x86: # JUMP_BACKWARD_NO_INTERRUPT
-            pass
-        elif self.co_code[self.pc] == 0x87: # MAKE_CELL
-            pass
-        elif self.co_code[self.pc] == 0x88: # LOAD_CLOSURE
-            pass
-        elif self.co_code[self.pc] == 0x89: # LOAD_DEREF
-            pass
-        elif self.co_code[self.pc] == 0x8a: # STORE_DEREF
-            pass
-        elif self.co_code[self.pc] == 0x8b: # DELETE_DEREF
-            pass
-        elif self.co_code[self.pc] == 0x8c: # JUMP_BACKWARD
-            pass
+        # elif self.co_code[self.pc] == 0x86: # JUMP_BACKWARD_NO_INTERRUPT
+        #     pass
+        # elif self.co_code[self.pc] == 0x87: # MAKE_CELL
+        #     pass
+        # elif self.co_code[self.pc] == 0x88: # LOAD_CLOSURE
+        #     pass
+        # elif self.co_code[self.pc] == 0x89: # LOAD_DEREF
+        #     pass
+        # elif self.co_code[self.pc] == 0x8a: # STORE_DEREF
+        #     pass
+        # elif self.co_code[self.pc] == 0x8b: # DELETE_DEREF
+        #     pass
+        # elif self.co_code[self.pc] == 0x8c: # JUMP_BACKWARD
+        #     pass
 
         elif self.co_code[self.pc] == 0x8d: # CALL_FUNCTION_KW
             argc = self.co_code[self.pc+1]
@@ -454,6 +470,18 @@ class VM:
             obj = self.stack.pop()
             val = obj(*args, **kargs)
             self.stack.append(val)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x8f: # SETUP_WITH
+            param = self.co_code[self.pc+1]
+            print('SETUP_WITH', param)
+
+            obj = self.stack.pop()
+            enter = obj.__enter__()
+            print('SETUP_WITH', enter)
+
+            self.stack.append(self.pc + param + 2)
+            self.stack.append(enter)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x9b: # FORMAT_VALUE
