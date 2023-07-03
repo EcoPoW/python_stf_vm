@@ -78,6 +78,9 @@ class VM:
             except BaseException as e:
                 print('except', e.__class__.__name__, dir(e.__class__))
                 print('blocks', self.blocks)
+                if self.blocks:
+                    new_pc = self.blocks[-1]
+                    self.pc = new_pc
             print('stack', self.stack)
         # print('---')
         # print('global_vars', self.global_vars)
@@ -234,6 +237,12 @@ class VM:
 
         elif self.co_code[self.pc] == 0x58: # END_FINALLY
             # print('END_FINALLY')
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x59: # POP_EXCEPT
+            print('POP_EXCEPT')
+            print('blocks', self.blocks)
+            self.blocks.pop()
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x5d: # FOR_ITER
