@@ -8,6 +8,11 @@ class VM:
     def __init__(self):
         self.module_object = None
         self.co_code = None
+        self.pc = 0
+        self.stack = []
+        self.blocks = []
+
+        self.local_vars = {}
         self.global_vars = {}
 
     def import_function(self, function_object, global_vars = {}):
@@ -17,9 +22,6 @@ class VM:
         self.co_names = function_object.__code__.co_names
         self.co_argcount = function_object.__code__.co_argcount
 
-        self.pc = 0
-        self.stack = []
-        self.local_vars = {}
         if global_vars:
             self.global_vars = global_vars
 
@@ -224,9 +226,9 @@ class VM:
 
         elif self.co_code[self.pc] == 0x57: # POP_BLOCK
             # param = self.co_code[self.pc+1]
-            delta = self.stack.pop()
+            delta = self.blocks.pop()
             print('POP_BLOCK', delta)
-            self.pc = delta
+            self.pc += 2
 
         elif self.co_code[self.pc] == 0x58: # END_FINALLY
             # print('END_FINALLY')
@@ -375,8 +377,8 @@ class VM:
 
         elif self.co_code[self.pc] == 0x7a: # SETUP_FINALLY
             param = self.co_code[self.pc+1]
-            # print('SETUP_FINALLY', param)
-            self.stack.append(param)
+            print('SETUP_FINALLY', param)
+            self.blocks.append(param+2)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x7c: # LOAD_FAST
