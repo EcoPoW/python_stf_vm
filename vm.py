@@ -8,9 +8,6 @@ class VM:
     def __init__(self):
         self.module_object = None
         self.co_code = None
-        self.pc = 0
-        self.stack = []
-        self.blocks = []
 
         self.local_vars = {}
         self.global_vars = {}
@@ -43,6 +40,10 @@ class VM:
         self.module_object = module_object
 
     def run(self, args, function_name = None):
+        self.pc = 0
+        self.stack = []
+        self.blocks = []
+
         if self.module_object and function_name:
             function_object = self.module_object.__dict__[function_name]
             assert type(function_object) == types.FunctionType
@@ -76,6 +77,7 @@ class VM:
                     print('return value', r)
             except BaseException as e:
                 print('except', e.__class__.__name__, dir(e.__class__))
+                print('blocks', self.blocks)
             print('stack', self.stack)
         # print('---')
         # print('global_vars', self.global_vars)
@@ -378,7 +380,7 @@ class VM:
         elif self.co_code[self.pc] == 0x7a: # SETUP_FINALLY
             param = self.co_code[self.pc+1]
             print('SETUP_FINALLY', param)
-            self.blocks.append(param+2)
+            self.blocks.append(self.pc+param+2)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x7c: # LOAD_FAST
