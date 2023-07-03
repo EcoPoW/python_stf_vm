@@ -1,9 +1,6 @@
 
-import hashlib
-import time
 
 import tornado.escape
-import web3
 
 import database
 
@@ -39,24 +36,24 @@ _sender = None
 #     pass
 
 
-def mint(_to:address, _amount:uint256):
-    amount = web3.main.to_int(hexstr=_amount)
+def mint(_to:address, _value:uint256):
+    # amount = web3.main.to_int(hexstr=_value)
     try:
         current_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _to.encode('utf8')))
         current_amount = tornado.escape.json_decode(current_amount_json)
     except:
         current_amount = 0
 
-    new_amount = current_amount + amount
+    new_amount = current_amount + _value
     print('before mint', current_amount)
-    print('mint to', _to, amount)
+    print('mint to', _to, _value)
     print('after mint', new_amount)
     new_amount_json = tornado.escape.json_encode(new_amount)
     _mpt.update(b'%s_balance_%s' % (CONTRACT_ADDRESS, _to.encode('utf8')), new_amount_json.encode('utf8'))
 
     current_total_json = _mpt.get(b'%s_total' % CONTRACT_ADDRESS)
     current_total = tornado.escape.json_decode(current_total_json)
-    new_total = current_total + amount
+    new_total = current_total + _value
     print('after mint total', new_total)
     new_total_json = tornado.escape.json_encode(new_total)
     _mpt.update(b'%s_total' % CONTRACT_ADDRESS, new_total_json.encode('utf8'))
@@ -73,8 +70,8 @@ def allowance(_owner:address, _spender:address):
 def transfer(_to:address, _value:uint256):
     # to_bytes = web3.main.to_bytes(hexstr=_to)
     # to_addr = web3.main.to_checksum_address(to_bytes[-20:])
-    amount = web3.main.to_int(hexstr=_value)
-    print('transfer to', _to, amount)
+    # amount = web3.main.to_int(hexstr=_value)
+    print('transfer to', _to, _value)
 
     try:
         sender_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _sender.encode('utf8')))
@@ -82,7 +79,7 @@ def transfer(_to:address, _value:uint256):
     except:
         sender_amount = 0
 
-    sender_new_amount = sender_amount - amount
+    sender_new_amount = sender_amount - _value
     assert sender_new_amount >= 0
     print('after transfer sender', sender_new_amount)
     sender_new_amount_json = tornado.escape.json_encode(sender_new_amount)
@@ -94,7 +91,7 @@ def transfer(_to:address, _value:uint256):
     except:
         current_amount = 0
 
-    new_amount = current_amount + amount
+    new_amount = current_amount + _value
     print('after transfer receiver', new_amount)
     new_amount_json = tornado.escape.json_encode(new_amount)
     _mpt.update(b'%s_balance_%s' % (CONTRACT_ADDRESS, _to.encode('utf8')), new_amount_json.encode('utf8'))
@@ -158,9 +155,9 @@ print('root hash', _mpt.root_hash())
 
 if __name__ == '__main__':
     for i in range(2):
-        mint('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0x1000')
+        mint('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000)
     _sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-    transfer('0x0000000000000000000000000000000000000002', '0x1000')
+    transfer('0x0000000000000000000000000000000000000002', 1000)
     balanceOf('0x0000000000000000000000000000000000000002')
 
     # t0 = time.time()
