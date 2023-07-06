@@ -7,6 +7,25 @@ import database
 class address(str):pass
 class uint256(int):pass
 
+class MPT:
+    # def __setitem__(self, key, value):
+    def put(self, key, value):
+        global _mpt
+        _mpt.put(key, value)
+
+
+    # def __getitem__(self, key):
+    def get(self, key, default):
+        global _mpt
+        try:
+            current_json = _mpt.get(b'%s_%s' % (CONTRACT_ADDRESS, key.encode('utf8')))
+            current_value = tornado.escape.json_decode(current_json)
+        except:
+            current_value = default
+
+        return current_value
+
+
 # function name() public view returns (string)
 # function symbol() public view returns (string)
 # function decimals() public view returns (uint8)
@@ -37,13 +56,7 @@ _sender = None
 
 
 def mint(_to:address, _value:uint256):
-    # amount = web3.main.to_int(hexstr=_value)
-    try:
-        current_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _to.encode('utf8')))
-        current_amount = tornado.escape.json_decode(current_amount_json)
-    except:
-        current_amount = 0
-
+    current_amount = mpt.get('balance_%s' % _to, 0)
     new_amount = current_amount + _value
     print('before mint', current_amount)
     print('mint to', _to, _value)
@@ -68,29 +81,15 @@ def allowance(_owner:address, _spender:address):
 
 
 def transfer(_to:address, _value:uint256):
-    # to_bytes = web3.main.to_bytes(hexstr=_to)
-    # to_addr = web3.main.to_checksum_address(to_bytes[-20:])
-    # amount = web3.main.to_int(hexstr=_value)
     print('transfer to', _to, _value)
-
-    try:
-        sender_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _sender.encode('utf8')))
-        sender_amount = tornado.escape.json_decode(sender_amount_json)
-    except:
-        sender_amount = 0
-
+    sender_amount = mpt.get('balance_%s' % _sender, 0)
     sender_new_amount = sender_amount - _value
     assert sender_new_amount >= 0
     print('after transfer sender', sender_new_amount)
     sender_new_amount_json = tornado.escape.json_encode(sender_new_amount)
     _mpt.update(b'%s_balance_%s' % (CONTRACT_ADDRESS, _sender.encode('utf8')), sender_new_amount_json.encode('utf8'))
 
-    try:
-        current_amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _to.encode('utf8')))
-        current_amount = tornado.escape.json_decode(current_amount_json)
-    except:
-        current_amount = 0
-
+    current_amount = mpt.get('balance_%s' % _sender, 0)
     new_amount = current_amount + _value
     print('after transfer receiver', new_amount)
     new_amount_json = tornado.escape.json_encode(new_amount)
@@ -102,11 +101,7 @@ def transferFrom(_from:address, _to:address, _value:uint256):
 
 
 def balanceOf(_owner:address):
-    try:
-        amount_json = _mpt.get(b'%s_balance_%s' % (CONTRACT_ADDRESS, _owner.encode('utf8')))
-        amount = tornado.escape.json_decode(amount_json)
-    except:
-        amount = 0
+    amount = mpt.get('balance_%s' % _owner, 0)
     print('balanceOf', _owner, amount)
 
     return f'0x{amount:0>64x}'
@@ -126,28 +121,17 @@ def decimals():
     return f'0x{18:0>64x}'
 
 def totalSupply():
-    return 0
+    amount = mpt.get('total', 0)
+    return f'0x{amount:0>64x}'
 
-
-
-# db = database.get_conn()
-# blockhash = db.get(b'chain_%s' % CONTRACT_ADDRESS)
-# print(blockhash)
-# if not blockhash:
-#     contract_state = {'balance': _balance}
-#     new_msg = ['0'*64, '', '', contract_state]
-#     new_contract_hash = hashlib.sha256(tornado.escape.json_encode(new_msg).encode('utf8')).hexdigest()
-#     new_contract_hash_bytes = new_contract_hash.encode('utf8')
-
-#     db.put(b'msgstate_%s' % new_contract_hash_bytes, tornado.escape.json_encode(contract_state).encode('utf8'))
-#     db.put(b'msg_%s' % new_contract_hash_bytes, tornado.escape.json_encode([new_contract_hash] + new_msg).encode('utf8'))
-#     db.put(b'chain_%s' % CONTRACT_ADDRESS, new_contract_hash_bytes)
 
 _mpt = database.get_mpt()
 _mpt.update(b'%s_balance_0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' % CONTRACT_ADDRESS, tornado.escape.json_encode(10**20))
 _mpt.update(b'%s_total' % CONTRACT_ADDRESS, tornado.escape.json_encode(10**20))
 print('root', _mpt.root())
 print('root hash', _mpt.root_hash())
+
+mpt = MPT()
 
 # hardhat test Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 # Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -159,6 +143,9 @@ if __name__ == '__main__':
     _sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     transfer('0x0000000000000000000000000000000000000002', 1000)
     balanceOf('0x0000000000000000000000000000000000000002')
+    print(totalSupply())
+    print(symbol())
+    print(decimals())
 
     # t0 = time.time()
     # for i in range(10000):
