@@ -3,7 +3,7 @@ import functools
 import types
 
 class VM:
-    '''for python 3.8'''
+    '''for python 3.10'''
 
     def __init__(self):
         self.module_object = None
@@ -35,7 +35,7 @@ class VM:
         self.global_vars['dict'] = dict
         self.global_vars['list'] = list
         self.global_vars['print'] = print
-        self.global_vars['open'] = open
+        # self.global_vars['open'] = open
         self.global_vars['AssertionError'] = AssertionError
         self.module_object = module_object
 
@@ -75,13 +75,14 @@ class VM:
                 r = self.step()
                 if r:
                     print('return value', r)
+                    return r
             except BaseException as e:
                 print('except', e.__class__.__name__, dir(e.__class__))
                 print('blocks', self.blocks)
                 if self.blocks:
                     new_pc = self.blocks[-1]
                     self.pc = new_pc
-            print('stack', self.stack)
+            # print('stack', self.stack)
         # print('---')
         # print('global_vars', self.global_vars)
 
@@ -367,14 +368,14 @@ class VM:
             if val:
                 self.pc += 2
             else:
-                self.pc = param
+                self.pc = param * 2
 
         elif self.co_code[self.pc] == 0x73: # POP_JUMP_IF_TRUE
             param = self.co_code[self.pc+1]
             # print('POP_JUMP_IF_TRUE', param)
             val = self.stack.pop()
             if val:
-                self.pc = param
+                self.pc = param * 2
             else:
                 self.pc += 2
 

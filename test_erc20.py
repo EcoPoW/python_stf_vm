@@ -5,6 +5,7 @@ import time
 
 import eth_utils
 
+import state
 import contract_erc20 as mod
 import vm
 
@@ -57,11 +58,13 @@ if __name__ == '__main__':
 
 
     vm = vm.VM()
-    mod._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    # state._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    state.load_state(None)
     vm.import_module(mod)
+    vm.global_vars['_sender'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     # vm.run([], 'init')
-    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'mint')
-    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0xffff'], 'transfer')
+    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
+    # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'transfer')
     t0 = time.time()
     for i in range(2):
         print('run mint')
