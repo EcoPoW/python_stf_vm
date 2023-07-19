@@ -523,14 +523,13 @@ class VM:
             param = self.co_code[self.pc+1]
             # print('CALL_METHOD', param)
             # print('CALL_METHOD', self.stack)
-            var = self.stack[-2-param]
+            obj = self.stack[-2-param]
             method = self.stack[-1-param]
             if param:
                 params = self.stack[-param:]
             else:
                 params = []
-            result = functools.partial(var.__getattribute__(method), *params)()
-            # print('result', result)
+            result = functools.partial(obj.__getattribute__(method), *params)()
             self.stack = self.stack[:-2-param]
             self.stack.append(result)
             self.pc += 2

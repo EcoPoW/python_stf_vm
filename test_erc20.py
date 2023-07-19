@@ -58,9 +58,9 @@ if __name__ == '__main__':
 
 
     vm = vm.VM()
-    # state._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-    state.load_state(None)
+    state.block_number = 1
     vm.import_module(mod)
+    # state._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.global_vars['_sender'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')

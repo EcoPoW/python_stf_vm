@@ -4,7 +4,7 @@ import tornado.escape
 
 from state import address, uint256
 from state import _state
-from state import _sender
+# from state import _sender
 
 # function name() public view returns (string)
 # function symbol() public view returns (string)
@@ -18,8 +18,6 @@ from state import _sender
 
 # event Transfer(address indexed _from, address indexed _to, uint256 _value)
 # event Approval(address indexed _owner, address indexed _spender, uint256 _value)
-
-CONTRACT_ADDRESS = b'0x0000000000000000000000000000000000000001'
 
 
 # def init(_name, _symbol, _decimals):
@@ -104,6 +102,8 @@ def totalSupply():
 
 
 if __name__ == '__main__':
+    import state
+    state.block_number = 1
     for i in range(2):
         mint('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000)
     _sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
