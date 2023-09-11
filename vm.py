@@ -88,7 +88,7 @@ class VM:
 
     def step(self):
         print('PC', self.pc, hex(self.co_code[self.pc]))
-        # print('local_vars', self.local_vars)
+        print('local_vars', self.local_vars)
         if self.co_code[self.pc] == 0x0: # NOP
             print('NOP')
 

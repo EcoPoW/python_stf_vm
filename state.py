@@ -4,10 +4,6 @@ import tornado.escape
 import database
 
 
-class address(str):pass
-class uint256(int):pass
-
-
 CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001'
 
 contract_address = CONTRACT_ADDRESS
@@ -18,7 +14,7 @@ block_number = 0
 
 class State:
     # def __setitem__(self, key, value):
-    def put(self, key, value):
+    def put(self, key, value, addr):
         global _trie
         global block_number
         value_json = tornado.escape.json_encode(value)
@@ -27,7 +23,7 @@ class State:
 
 
     # def __getitem__(self, key):
-    def get(self, key, default):
+    def get(self, key, default, addr):
         global _trie
         # print('_trie', _trie)
         value = default

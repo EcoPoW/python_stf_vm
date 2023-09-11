@@ -62,15 +62,17 @@ if __name__ == '__main__':
     vm.import_module(mod)
     # state._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.global_vars['_sender'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    vm.global_vars['_self'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    vm.global_vars['_state'] = state._state
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'transfer')
     t0 = time.time()
-    for i in range(2):
+    for i in range(1):
         print('run mint')
         vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
         print('run transfer')
         vm.run(['0x0000000000000000000000000000000000000002', 1000], 'transfer')
-        print('run balanceOf')
-        vm.run(['0x0000000000000000000000000000000000000002'], 'balanceOf')
+        #print('run balanceOf')
+        #vm.run(['0x0000000000000000000000000000000000000002'], 'balanceOf')
     print(time.time() - t0)
