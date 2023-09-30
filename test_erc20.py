@@ -71,6 +71,8 @@ if __name__ == '__main__':
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'transfer')
     t0 = time.time()
     for i in range(1):
+        print('run init')
+        vm.run(['ERC20', 'U', 18, '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'], 'init')
         print('run mint')
         vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
         print('run transfer')
