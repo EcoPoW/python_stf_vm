@@ -63,7 +63,9 @@ if __name__ == '__main__':
     # state._sender = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.global_vars['_sender'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.global_vars['_self'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-    vm.global_vars['_state'] = state._state
+    vm.global_vars['_get'] = state.get
+    vm.global_vars['_put'] = state.put
+    vm.global_vars['print'] = print
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'transfer')
