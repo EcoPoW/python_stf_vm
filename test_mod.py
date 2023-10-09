@@ -23,6 +23,8 @@ if __name__ == '__main__':
 
     vm = vm.VM()
     vm.import_module(mod)
+    vm.global_vars['_sender'] = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     vm.run([], 'init')
     vm.run([1000], 'mint')
     vm.run(['0x1111', 1000], 'transfer')
+

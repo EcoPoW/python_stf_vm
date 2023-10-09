@@ -1,4 +1,3 @@
-from mock import msg
 
 total = 0
 users = {}
@@ -7,21 +6,21 @@ _hidden = 1
 
 def init():
     global owner
-    owner = msg.sender
+    owner = _sender
 
 def mint(amount):
     assert type(amount) is int and amount > 0
-    assert owner == msg.sender
+    assert owner == _sender
     global total, users
     total += amount
-    users.setdefault(msg.sender, 0)
-    users[msg.sender] += amount
+    users.setdefault(_sender, 0)
+    users[_sender] += amount
 
 def transfer(user, amount):
     assert type(amount) is int and amount > 0
     global total, users
-    assert users[msg.sender] >= amount
-    users[msg.sender] -= amount
+    assert users[_sender] >= amount
+    users[_sender] -= amount
     users.setdefault(user, 0)
     users[user] += amount
 
