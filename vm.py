@@ -17,7 +17,7 @@ class VM:
 
     def import_function(self, function_object, global_vars = {}):
         self.co_code = function_object.__code__.co_code
-        self.co_varnames = function_object.__code__.co_varnames
+        # self.co_varnames = function_object.__code__.co_varnames
         self.co_consts = function_object.__code__.co_consts
         self.co_names = function_object.__code__.co_names
         self.co_argcount = function_object.__code__.co_argcount
@@ -43,6 +43,17 @@ class VM:
         self.global_vars['AssertionError'] = AssertionError
         self.module_object = module_object
 
+    def import_src(self, src):
+        print(dir(src))
+        print(src.co_code)
+        self.co_code = src.co_code
+        self.co_argcount = 0
+        self.co_consts = src.co_consts
+        # self.co_varnames = src.co_varnames
+        self.co_names = src.co_names
+        self.run([])
+        print(self.global_vars)
+
     def run(self, args, function_name = None):
         self.pc = 0
         self.stack = []
@@ -50,6 +61,10 @@ class VM:
 
         if self.module_object and function_name:
             function_object = self.module_object.__dict__[function_name]
+            assert type(function_object) == types.FunctionType
+            self.import_function(function_object)
+        elif function_name in self.global_vars:
+            function_object = self.global_vars[function_name]
             assert type(function_object) == types.FunctionType
             self.import_function(function_object)
 
@@ -93,7 +108,7 @@ class VM:
 
     def step(self):
         print('PC', self.pc, hex(self.co_code[self.pc]))
-        print('local_vars', self.local_vars)
+        # print('local_vars', self.local_vars)
         if self.co_code[self.pc] == 0x0: # NOP
             print('NOP')
 
@@ -220,6 +235,10 @@ class VM:
             self.stack.append(iter(val))
             self.pc += 2
 
+        ## MUST DISABLE
+        elif self.co_code[self.pc] == 0x47: # LOAD_BUILD_CLASS
+            raise
+
         elif self.co_code[self.pc] == 0x51: # WITH_CLEANUP_START
             # val = self.stack.pop()
             # print('WITH_CLEANUP_START')
@@ -251,6 +270,16 @@ class VM:
             self.blocks.pop()
             self.pc += 2
 
+        elif self.co_code[self.pc] == 0x5a: # STORE_NAME
+            val = self.stack.pop()
+            param = self.co_code[self.pc+1]
+            print('STORE_NAME', param)
+            print('STORE_NAME', self.co_names)
+            # print('STORE_NAME', self.co_varnames)
+            varname = self.co_names[param]
+            self.global_vars[varname] = val
+            self.pc += 2
+
         elif self.co_code[self.pc] == 0x5d: # FOR_ITER
             it = self.stack[-1]
             try:
@@ -278,7 +307,7 @@ class VM:
         elif self.co_code[self.pc] == 0x64: # LOAD_CONST
             param = self.co_code[self.pc+1]
             # print('LOAD_CONST', self.co_consts)
-            # print('LOAD_CONST', param, self.co_consts[param])
+            print('LOAD_CONST', param, self.co_consts[param])
             self.stack.append(self.co_consts[param])
             self.pc += 2
 
@@ -357,9 +386,9 @@ class VM:
 
             self.pc += 2
 
-        # elif self.co_code[self.pc] == 0x6c: # IMPORT_NAME
-        #     param = self.co_code[self.pc+1]
-        #     self.pc += 2
+        ## MUST DISABLE
+        elif self.co_code[self.pc] == 0x6c: # IMPORT_NAME
+            raise
 
         elif self.co_code[self.pc] == 0x6e: # JUMP_FORWARD
             param = self.co_code[self.pc+1]
@@ -439,13 +468,24 @@ class VM:
 
         elif self.co_code[self.pc] == 0x83: # CALL_FUNCTION
             param = self.co_code[self.pc+1]
-            # print('CALL_FUNCTION', param)
+            print('CALL_FUNCTION', param)
             func = self.stack[-1-param]
             params = self.stack[-param:]
+            print('CALL_FUNCTION', func, params)
             result = functools.partial(func, *params)()
             # print('result', result)
             self.stack = self.stack[:-1-param]
             self.stack.append(result)
+            self.pc += 2
+
+        elif self.co_code[self.pc] == 0x84: # MAKE_FUNCTION
+            param = self.co_code[self.pc+1]
+            # print('MAKE_FUNCTION', param)
+            name = self.stack.pop()
+            code = self.stack.pop()
+            func = types.FunctionType(code, self.global_vars, name)
+            self.stack.append(func)
+            print('MAKE_FUNCTION', self.stack)
             self.pc += 2
 
         elif self.co_code[self.pc] == 0x85: # BUILD_SLICE

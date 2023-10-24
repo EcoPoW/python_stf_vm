@@ -34,5 +34,5 @@ if __name__ == '__main__':
 
 __hidden = 2
 
-class Empty:
-    pass
+# class Empty:
+#     pass
