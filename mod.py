@@ -7,6 +7,7 @@ _hidden = 1
 def init():
     global owner
     owner = _sender
+    mint(10000)
 
 def mint(amount):
     assert type(amount) is int and amount > 0
