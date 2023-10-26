@@ -490,7 +490,10 @@ class VM:
             print('CALL_FUNCTION', param)
             print('CALL_FUNCTION', ctx.stack)
             func = ctx.stack[-1-param]
-            params = ctx.stack[-param:]
+            if param:
+                params = ctx.stack[-param:]
+            else:
+                params = []
             print('CALL_FUNCTION', func, params)
             result = self.invoke(func, params)
             # print('result', result)
@@ -600,21 +603,28 @@ class VM:
 
         elif co_code[ctx.pc] == 0xa1: # CALL_METHOD
             param = co_code[ctx.pc+1]
-            # print('CALL_METHOD', param)
-            # print('CALL_METHOD', ctx.stack)
+            print('CALL_METHOD', param)
+            print('CALL_METHOD', ctx.stack)
             obj = ctx.stack[-2-param]
-            # print('CALL_METHOD', obj)
+            #print('CALL_METHOD', dir(obj))
             method = ctx.stack[-1-param]
-            # print('CALL_METHOD', method)
             if param:
                 params = ctx.stack[-param:]
             else:
                 params = []
-            # print('CALL_METHOD', obj.__getattribute__(method))
-            try:
-                result = functools.partial(obj.__getattribute__(method), *params)()
-            except AttributeError:
-                result = functools.partial(obj.__getattr__(method), *params)()
+            print('CALL_METHOD', method)
+            print('CALL_METHOD', params)
+            #print('CALL_METHOD', obj.__getattribute__(method))
+            if type(obj) == type:
+                method_obj = obj.__dict__[method]
+                call_obj = method_obj.__get__(obj)
+                print('CALL_METHOD', obj.__dict__[method])
+                result = functools.partial(call_obj, *params)()
+            else:
+                try:
+                    result = functools.partial(obj.__getattribute__(method), *params)()
+                except AttributeError:
+                    result = functools.partial(obj.__getattr__(method), *params)()
 
             # print('CALL_METHOD result', result)
             ctx.stack = ctx.stack[:-2-param]
