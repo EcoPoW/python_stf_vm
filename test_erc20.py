@@ -66,6 +66,9 @@ if __name__ == '__main__':
     vm.global_vars['_get'] = state.get
     vm.global_vars['_put'] = state.put
     vm.global_vars['print'] = print
+    vm.native_vars.add(state.get)
+    vm.native_vars.add(state.put)
+    vm.native_vars.add(print)
     # vm.run([], 'init')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'mint')
     # vm.run(['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 1000], 'transfer')

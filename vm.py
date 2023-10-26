@@ -2,7 +2,7 @@
 import sys
 import functools
 import types
-import dis
+# import dis
 import opcode
 
 assert sys.version_info.major == 3
@@ -26,6 +26,7 @@ class VM:
         self.code = None
 
         self.global_vars = {}
+        self.native_vars = set()
 
     def import_function(self, function_object, global_vars = {}):
         self.code = function_object.__code__
@@ -52,7 +53,7 @@ class VM:
     def invoke(self, func, args):
         print(func, args)
         # dis.dis(func.__code__.co_code)
-        if type(func) == type:
+        if type(func) == type or func in self.native_vars:
             result = functools.partial(func, *args)()
             return result
 
