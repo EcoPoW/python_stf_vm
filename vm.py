@@ -2,6 +2,8 @@
 import sys
 import functools
 import types
+import dis
+import opcode
 
 assert sys.version_info.major == 3
 
@@ -33,20 +35,10 @@ class VM:
 
     def import_module(self, module_object):
         for k, v in module_object.__dict__.items():
-            if not k.startswith('__') and type(v) not in [type, types.FunctionType]:
+            if not k.startswith('__'):
                 self.global_vars[k] = v
 
-        self.global_vars['type'] = type
-        self.global_vars['int'] = int
-        self.global_vars['str'] = str
-        self.global_vars['bytes'] = bytes
-        self.global_vars['set'] = set
-        self.global_vars['dict'] = dict
-        self.global_vars['list'] = list
-        self.global_vars['range'] = range
-        self.global_vars['len'] = len
-        # self.global_vars['open'] = open
-        self.global_vars['AssertionError'] = AssertionError
+
         self.module_object = module_object
 
     def import_src(self, src):
@@ -54,25 +46,15 @@ class VM:
         # print(dir(src))
         print(src.co_code)
 
-        self.global_vars['type'] = type
-        self.global_vars['int'] = int
-        self.global_vars['str'] = str
-        self.global_vars['bytes'] = bytes
-        self.global_vars['set'] = set
-        self.global_vars['dict'] = dict
-        self.global_vars['list'] = list
-        self.global_vars['range'] = range
-        self.global_vars['len'] = len
-        # self.global_vars['open'] = open
-        self.global_vars['AssertionError'] = AssertionError
-
         self.code = src
         self.run([])
-        print(self.global_vars)
 
     def invoke(self, func, args):
         print(func, args)
         # dis.dis(func.__code__.co_code)
+        if type(func) == type:
+            result = functools.partial(func, *args)()
+            return result
 
         assert func.__code__.co_argcount == len(args)
         assert func.__code__.co_code
@@ -96,6 +78,18 @@ class VM:
             function_object = self.global_vars[function_name]
             assert type(function_object) == types.FunctionType
             self.import_function(function_object)
+
+        self.global_vars['type'] = type
+        self.global_vars['int'] = int
+        self.global_vars['str'] = str
+        self.global_vars['bytes'] = bytes
+        self.global_vars['set'] = set
+        self.global_vars['dict'] = dict
+        self.global_vars['list'] = list
+        self.global_vars['range'] = range
+        self.global_vars['len'] = len
+        # self.global_vars['open'] = open
+        self.global_vars['AssertionError'] = AssertionError
 
         assert self.code.co_argcount == len(args)
         assert self.code.co_code
@@ -121,9 +115,9 @@ class VM:
                 return r
             # except BaseException as e:
             #     print('except', e.__class__.__name__, dir(e.__class__))
-            #     print('blocks', self.blocks)
-            #     if self.blocks:
-            #         new_pc = self.blocks[-1]
+            #     print('blocks', ctx.blocks)
+            #     if ctx.blocks:
+            #         new_pc = ctx.blocks[-1]
             #         ctx.pc = new_pc
             # print('stack', ctx.stack)
         # print('---')
@@ -132,7 +126,7 @@ class VM:
 
     def step(self, ctx):
         co_code = ctx.code.co_code
-        print('PC', ctx.pc, hex(co_code[ctx.pc]))
+        print('PC', ctx.pc, hex(co_code[ctx.pc]), opcode.opname[co_code[ctx.pc]])
         # print('local_vars', self.local_vars)
         if co_code[ctx.pc] == 0x0: # NOP
             print('NOP')
@@ -281,7 +275,7 @@ class VM:
 
         elif co_code[ctx.pc] == 0x57: # POP_BLOCK
             # param = co_code[ctx.pc+1]
-            delta = self.blocks.pop()
+            delta = ctx.blocks.pop()
             print('POP_BLOCK', delta)
             ctx.pc += 2
 
@@ -291,8 +285,8 @@ class VM:
 
         elif co_code[ctx.pc] == 0x59: # POP_EXCEPT
             print('POP_EXCEPT')
-            print('blocks', self.blocks)
-            self.blocks.pop()
+            print('blocks', ctx.blocks)
+            ctx.blocks.pop()
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x5a: # STORE_NAME
@@ -462,7 +456,7 @@ class VM:
         elif co_code[ctx.pc] == 0x7a: # SETUP_FINALLY
             param = co_code[ctx.pc+1]
             print('SETUP_FINALLY', param)
-            self.blocks.append(ctx.pc+param+2)
+            ctx.blocks.append(ctx.pc+param+2)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x7c: # LOAD_FAST
@@ -497,12 +491,11 @@ class VM:
             func = ctx.stack[-1-param]
             params = ctx.stack[-param:]
             print('CALL_FUNCTION', func, params)
-            # result = functools.partial(func, *params)()
             result = self.invoke(func, params)
             # print('result', result)
             ctx.stack = ctx.stack[:-1-param]
             ctx.stack.append(result)
-            # ctx.pc += 2
+            ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x84: # MAKE_FUNCTION
             param = co_code[ctx.pc+1]

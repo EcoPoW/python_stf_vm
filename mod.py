@@ -25,6 +25,7 @@ def transfer(user, amount):
     users.setdefault(user, 0)
     users[user] += amount
 
+print(__name__)
 if __name__ == '__main__':
     init()
     mint(1000)
