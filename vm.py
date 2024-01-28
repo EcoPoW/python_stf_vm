@@ -51,7 +51,7 @@ class VM:
         self.run([])
 
     def invoke(self, func, args):
-        print(func, args)
+        # print(func, args)
         # dis.dis(func.__code__.co_code)
         if type(func) == type or func in self.native_vars:
             result = functools.partial(func, *args)()
@@ -127,7 +127,7 @@ class VM:
 
     def step(self, ctx):
         co_code = ctx.code.co_code
-        print('PC', ctx.pc, hex(co_code[ctx.pc]), opcode.opname[co_code[ctx.pc]])
+        # print('PC', ctx.pc, hex(co_code[ctx.pc]), opcode.opname[co_code[ctx.pc]])
         # print('local_vars', self.local_vars)
         if co_code[ctx.pc] == 0x0: # NOP
             print('NOP')
@@ -326,7 +326,7 @@ class VM:
         elif co_code[ctx.pc] == 0x64: # LOAD_CONST
             param = co_code[ctx.pc+1]
             # print('LOAD_CONST', ctx.code.co_consts)
-            print('LOAD_CONST', param, ctx.code.co_consts[param])
+            # print('LOAD_CONST', param, ctx.code.co_consts[param])
             ctx.stack.append(ctx.code.co_consts[param])
             ctx.pc += 2
 
@@ -376,9 +376,13 @@ class VM:
             obj = ctx.stack.pop()
             # print('LOAD_ATTR', attr)
             # print('LOAD_ATTR', dir(obj))
-            # val = obj.__dict__[attr]
-            # val = obj.__getattribute__(attr)
-            val = obj.__getattr__(attr)
+            try:
+                val = obj.__getattribute__(obj, attr)
+            except:
+                try:
+                    val = obj.__getattr__(attr)
+                except:
+                    val = obj.__dict__[attr]
             # print('LOAD_ATTR', param, attr, val)
             ctx.stack.append(val)
             ctx.pc += 2
@@ -454,6 +458,18 @@ class VM:
             ctx.stack.append(val)
             ctx.pc += 2
 
+        elif co_code[ctx.pc] == 0x75: # IS_OP
+            param = co_code[ctx.pc+1]
+            a = ctx.stack.pop()
+            b = ctx.stack.pop()
+            print('IS_OP', a, b)
+            if param == 1: # is not
+                ctx.stack.append(a is not b)
+            else: # is
+                ctx.stack.append(a is b)
+
+            ctx.pc += 2
+
         elif co_code[ctx.pc] == 0x7a: # SETUP_FINALLY
             param = co_code[ctx.pc+1]
             print('SETUP_FINALLY', param)
@@ -487,14 +503,14 @@ class VM:
 
         elif co_code[ctx.pc] == 0x83: # CALL_FUNCTION
             param = co_code[ctx.pc+1]
-            print('CALL_FUNCTION', param)
-            print('CALL_FUNCTION', ctx.stack)
+            # print('CALL_FUNCTION', param)
+            # print('CALL_FUNCTION', ctx.stack)
             func = ctx.stack[-1-param]
             if param:
                 params = ctx.stack[-param:]
             else:
                 params = []
-            print('CALL_FUNCTION', func, params)
+            # print('CALL_FUNCTION', func, params)
             result = self.invoke(func, params)
             # print('result', result)
             ctx.stack = ctx.stack[:-1-param]
@@ -603,8 +619,8 @@ class VM:
 
         elif co_code[ctx.pc] == 0xa1: # CALL_METHOD
             param = co_code[ctx.pc+1]
-            print('CALL_METHOD', param)
-            print('CALL_METHOD', ctx.stack)
+            # print('CALL_METHOD', param)
+            # print('CALL_METHOD', ctx.stack)
             obj = ctx.stack[-2-param]
             #print('CALL_METHOD', dir(obj))
             method = ctx.stack[-1-param]
@@ -612,13 +628,13 @@ class VM:
                 params = ctx.stack[-param:]
             else:
                 params = []
-            print('CALL_METHOD', method)
-            print('CALL_METHOD', params)
-            #print('CALL_METHOD', obj.__getattribute__(method))
+            # print('CALL_METHOD', method)
+            # print('CALL_METHOD', params)
+            # print('CALL_METHOD', obj.__getattribute__(method))
             if type(obj) == type:
                 method_obj = obj.__dict__[method]
                 call_obj = method_obj.__get__(obj)
-                print('CALL_METHOD', obj.__dict__[method])
+                # print('CALL_METHOD', obj.__dict__[method])
                 result = functools.partial(call_obj, *params)()
             else:
                 try:
