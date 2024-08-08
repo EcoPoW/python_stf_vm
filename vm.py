@@ -250,6 +250,14 @@ class VM:
             obj[key] = val
             ctx.pc += 2
 
+        elif co_code[ctx.pc] == 0x3d: # DELETE_SUBSCR
+            key = ctx.stack.pop()
+            obj = ctx.stack.pop()
+            # print('DELETE_SUBSCR', obj, '[', key, ']')
+            del obj[key]
+            # print('DELETE_SUBSCR', obj)
+            ctx.pc += 2
+
         elif co_code[ctx.pc] == 0x44: # GET_ITER
             val = ctx.stack.pop()
             ctx.stack.append(iter(val))
@@ -470,6 +478,15 @@ class VM:
 
             ctx.pc += 2
 
+        elif co_code[ctx.pc] == 0x76: # CONTAINS_OP
+            param = co_code[ctx.pc+1]
+
+            a = ctx.stack.pop()
+            b = ctx.stack.pop()
+            # print('CONTAINS_OP', a, b)
+            ctx.stack.append(b in a)
+            ctx.pc += 2
+
         elif co_code[ctx.pc] == 0x7a: # SETUP_FINALLY
             param = co_code[ctx.pc+1]
             print('SETUP_FINALLY', param)
@@ -601,6 +618,22 @@ class VM:
             format_string = ctx.stack.pop()
             val = ctx.stack.pop()
             ctx.stack.append(format(val, format_string))
+            ctx.pc += 2
+
+        elif co_code[ctx.pc] == 0x9c: # BUILD_CONST_KEY_MAP
+            param = co_code[ctx.pc+1]
+            print('BUILD_CONST_KEY_MAP', param)
+            print(ctx.stack)
+            keys = ctx.stack.pop()
+            assert len(keys) == param
+
+            result = {}
+            for k in reversed(keys):
+                v = ctx.stack.pop()
+                print(k, v, type(v))
+                result[k] = v
+
+            ctx.stack.append(result)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x9d: # BUILD_STRING
