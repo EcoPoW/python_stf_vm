@@ -24,6 +24,7 @@ class VM:
     def __init__(self):
         self.module_object = None
         self.code = None
+        self.extended_arg = 0
 
         self.global_vars = {}
         self.native_vars = set()
@@ -45,10 +46,9 @@ class VM:
     def import_src(self, src):
         self.contexts = []
         # print(dir(src))
-        print(src.co_code)
+        # print(src.co_code)
 
         self.code = src
-        self.run([])
 
     def invoke(self, func, args):
         # print(func, args)
@@ -57,7 +57,8 @@ class VM:
             result = functools.partial(func, *args)()
             return result
 
-        assert func.__code__.co_argcount == len(args)
+        print(func.__code__.co_argcount, args)
+        # assert func.__code__.co_argcount == len(args)
         assert func.__code__.co_code
         ctx = Context(func.__code__, args)
 
@@ -91,6 +92,14 @@ class VM:
         self.global_vars['len'] = len
         # self.global_vars['open'] = open
         self.global_vars['AssertionError'] = AssertionError
+        self.native_vars.add(type)
+        self.native_vars.add(int)
+        self.native_vars.add(str)
+        self.native_vars.add(bytes)
+        self.native_vars.add(dict)
+        self.native_vars.add(list)
+        self.native_vars.add(range)
+        self.native_vars.add(len)
 
         assert self.code.co_argcount == len(args)
         assert self.code.co_code
@@ -100,10 +109,10 @@ class VM:
         # print('global_vars', self.global_vars)
         # print('\n')
         # print('co_code', [hex(i) for i in self.co_code])
-        # print('co_varnames', self.co_varnames)
-        # print('co_names', self.co_names) # for method
-        # print('co_consts', self.co_consts)
-        # print('co_argcount', self.co_argcount)
+        # print('co_varnames', self.code.co_varnames)
+        # print('co_names', self.code.co_names) # for method
+        # print('co_consts', self.code.co_consts)
+        # print('co_argcount', self.code.co_argcount)
         # print('---')
 
         pc = -1
@@ -129,6 +138,10 @@ class VM:
         co_code = ctx.code.co_code
         # print('PC', ctx.pc, hex(co_code[ctx.pc]), opcode.opname[co_code[ctx.pc]])
         # print('local_vars', self.local_vars)
+        param = co_code[ctx.pc+1] + self.extended_arg
+        if self.extended_arg > 0:
+            self.extended_arg = 0
+
         if co_code[ctx.pc] == 0x0: # NOP
             print('NOP')
 
@@ -207,8 +220,8 @@ class VM:
         elif co_code[ctx.pc] == 0x19: # BINARY_SUBSCR
             idx = ctx.stack.pop()
             obj = ctx.stack.pop()
+            # print('BINARY_SUBSCR', obj, idx)
             ctx.stack.append(obj[idx])
-            # print('BINARY_SUBSCR')
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x1a: # BINARY_FLOOR_DIVIDE
@@ -285,7 +298,7 @@ class VM:
         elif co_code[ctx.pc] == 0x57: # POP_BLOCK
             # param = co_code[ctx.pc+1]
             delta = ctx.blocks.pop()
-            print('POP_BLOCK', delta)
+            # print('POP_BLOCK', delta)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x58: # END_FINALLY
@@ -293,29 +306,36 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x59: # POP_EXCEPT
-            print('POP_EXCEPT')
-            print('blocks', ctx.blocks)
+            # print('POP_EXCEPT')
+            # print('blocks', ctx.blocks)
             ctx.blocks.pop()
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x5a: # STORE_NAME
             val = ctx.stack.pop()
-            param = co_code[ctx.pc+1]
-            print('STORE_NAME', param)
-            print('STORE_NAME', ctx.code.co_names)
+            # print('STORE_NAME', param)
+            # print('STORE_NAME', ctx.code.co_names)
             varname = ctx.code.co_names[param]
             self.global_vars[varname] = val
+            ctx.pc += 2
+
+        elif co_code[ctx.pc] == 0x5c: # UNPACK_SEQUENCE
+            # print('UNPACK_SEQUENCE', param)
+            # print('UNPACK_SEQUENCE', ctx.stack)
+            values = ctx.stack.pop()
+            for i in range(param-1, -1, -1):
+                # print(i)
+                ctx.stack.append(values[i])
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x5d: # FOR_ITER
             it = ctx.stack[-1]
             try:
                 n = it.__next__()
-                print('FOR_ITER', it, n)
+                # print('FOR_ITER', it, n)
                 ctx.stack.append(n)
             except StopIteration:
-                param = co_code[ctx.pc+1]
-                print('FOR_ITER STOP', param)
+                # print('FOR_ITER STOP', param)
                 ctx.stack.pop()
                 if sys.version_info.minor == 8:
                     ctx.pc += param
@@ -324,7 +344,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x61: # STORE_GLOBAL
-            param = co_code[ctx.pc+1]
             val = ctx.stack.pop()
             global_var = ctx.code.co_names[param]
             # print('STORE_GLOBAL', param, global_var, val)
@@ -332,20 +351,25 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x64: # LOAD_CONST
-            param = co_code[ctx.pc+1]
             # print('LOAD_CONST', ctx.code.co_consts)
             # print('LOAD_CONST', param, ctx.code.co_consts[param])
             ctx.stack.append(ctx.code.co_consts[param])
             ctx.pc += 2
 
+        elif co_code[ctx.pc] == 0x65: # LOAD_NAME
+            # print('LOAD_NAME', ctx.code.co_names, param)
+            # val = ctx.local_vars[ctx.code.co_names[param]]
+            val = self.global_vars[ctx.code.co_names[param]]
+            ctx.stack.append(val)
+            ctx.pc += 2
+
         elif co_code[ctx.pc] == 0x66: # BUILD_TUPLE
-            argc = co_code[ctx.pc+1]
-            # print('BUILD_TUPLE', argc)
+            # print('BUILD_TUPLE', param)
             # print('BUILD_TUPLE', ctx.code.co_consts)
             # print('BUILD_TUPLE', ctx.stack)
-            if argc:
-                values = ctx.stack[-argc:]
-                ctx.stack = ctx.stack[:-argc]
+            if param:
+                values = ctx.stack[-param:]
+                ctx.stack = ctx.stack[:-param]
             else:
                 values = []
             ctx.stack.append(tuple(values))
@@ -353,13 +377,12 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x67: # BUILD_LIST
-            argc = co_code[ctx.pc+1]
-            # print('BUILD_LIST', argc)
+            # print('BUILD_LIST', param)
             # print('BUILD_LIST', ctx.code.co_consts)
             # print('BUILD_LIST', ctx.stack)
-            if argc:
-                values = ctx.stack[-argc:]
-                ctx.stack = ctx.stack[:-argc]
+            if param:
+                values = ctx.stack[-param:]
+                ctx.stack = ctx.stack[:-param]
             else:
                 values = []
             ctx.stack.append(list(values))
@@ -367,7 +390,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x69: # BUILD_MAP
-            param = co_code[ctx.pc+1]
             # print('BUILD_MAP', param)
             result = {}
             for i in range(param):
@@ -379,13 +401,15 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x6a: # LOAD_ATTR
-            param = co_code[ctx.pc+1]
             attr = ctx.code.co_names[param]
             obj = ctx.stack.pop()
-            # print('LOAD_ATTR', attr)
+            # print('LOAD_ATTR', obj, attr)
             # print('LOAD_ATTR', dir(obj))
             try:
-                val = obj.__getattribute__(obj, attr)
+                if type(obj) == type:
+                    val = obj.__getattribute__(obj, attr)
+                else:
+                    val = obj.__getattribute__(attr)
             except:
                 try:
                     val = obj.__getattr__(attr)
@@ -396,7 +420,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x6b: # COMPARE_OP
-            param = co_code[ctx.pc+1]
             right = ctx.stack.pop()
             left = ctx.stack.pop()
             # print('COMPARE_OP', param, left, right)
@@ -422,12 +445,13 @@ class VM:
             raise
 
         elif co_code[ctx.pc] == 0x6e: # JUMP_FORWARD
-            param = co_code[ctx.pc+1]
             # print('JUMP_FORWARD', param)
-            ctx.pc += param
+            if sys.version_info.minor == 8:
+                ctx.pc += param
+            elif sys.version_info.minor == 10:
+                ctx.pc += (param+1) * 2
 
         elif co_code[ctx.pc] == 0x71: # JUMP_ABSOLUTE
-            param = co_code[ctx.pc+1]
             # print('JUMP_ABSOLUTE', param)
             if sys.version_info.minor == 8:
                 ctx.pc = param
@@ -435,8 +459,7 @@ class VM:
                 ctx.pc = param * 2
 
         elif co_code[ctx.pc] == 0x72: # POP_JUMP_IF_FALSE
-            param = co_code[ctx.pc+1]
-            # print('POP_JUMP_IF_FALSE', param)
+            # print('POP_JUMP_IF_FALSE', param, ctx.pc)
             val = ctx.stack.pop()
             if val:
                 ctx.pc += 2
@@ -447,8 +470,7 @@ class VM:
                     ctx.pc = param * 2
 
         elif co_code[ctx.pc] == 0x73: # POP_JUMP_IF_TRUE
-            param = co_code[ctx.pc+1]
-            # print('POP_JUMP_IF_TRUE', param)
+            # print('POP_JUMP_IF_TRUE', param, ctx.pc)
             val = ctx.stack.pop()
             if val:
                 if sys.version_info.minor == 8:
@@ -459,7 +481,6 @@ class VM:
                 ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x74: # LOAD_GLOBAL
-            param = co_code[ctx.pc+1]
             global_var = ctx.code.co_names[param]
             # print('LOAD_GLOBAL', param, global_var)
             val = self.global_vars[global_var]
@@ -467,10 +488,9 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x75: # IS_OP
-            param = co_code[ctx.pc+1]
             a = ctx.stack.pop()
             b = ctx.stack.pop()
-            print('IS_OP', a, b)
+            # print('IS_OP', a, b)
             if param == 1: # is not
                 ctx.stack.append(a is not b)
             else: # is
@@ -479,22 +499,21 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x76: # CONTAINS_OP
-            param = co_code[ctx.pc+1]
-
             a = ctx.stack.pop()
             b = ctx.stack.pop()
-            # print('CONTAINS_OP', a, b)
-            ctx.stack.append(b in a)
+            # print('CONTAINS_OP', b, a, b in a)
+            if param == 1:
+                ctx.stack.append(b not in a)
+            else:
+                ctx.stack.append(b in a)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x7a: # SETUP_FINALLY
-            param = co_code[ctx.pc+1]
-            print('SETUP_FINALLY', param)
+            # print('SETUP_FINALLY', param)
             ctx.blocks.append(ctx.pc+param+2)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x7c: # LOAD_FAST
-            param = co_code[ctx.pc+1]
             # print('LOAD_FAST', param)
             varname = ctx.code.co_varnames[param]
             val = ctx.local_vars[varname]
@@ -502,7 +521,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x7d: # STORE_FAST
-            param = co_code[ctx.pc+1]
             # print('STORE_FAST', param)
             # print('STORE_FAST', ctx.co_varnames[param])
             var = ctx.code.co_varnames[param]
@@ -511,7 +529,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x82: # RAISE_VARARGS
-            param = co_code[ctx.pc+1]
             # print('RAISE_VARARGS', param)
             if param == 1:
                 first = ctx.stack.pop()
@@ -519,7 +536,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x83: # CALL_FUNCTION
-            param = co_code[ctx.pc+1]
             # print('CALL_FUNCTION', param)
             # print('CALL_FUNCTION', ctx.stack)
             func = ctx.stack[-1-param]
@@ -535,7 +551,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x84: # MAKE_FUNCTION
-            param = co_code[ctx.pc+1]
             # print('MAKE_FUNCTION', param)
             name = ctx.stack.pop()
             code = ctx.stack.pop()
@@ -545,7 +560,6 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x85: # BUILD_SLICE
-            param = co_code[ctx.pc+1]
             # print('BUILD_SLICE', param)
 
             if param == 1:
@@ -578,22 +592,24 @@ class VM:
         #     pass
 
         elif co_code[ctx.pc] == 0x8d: # CALL_FUNCTION_KW
-            argc = co_code[ctx.pc+1]
-            # print('CALL_FUNCTION_KW', ctx.stack)
+            # print('CALL_FUNCTION_KW', ctx.stack, param)
             keys = ctx.stack.pop()
-            values = ctx.stack[-argc:]
-            ctx.stack = ctx.stack[:-argc]
+            values = ctx.stack[-param:]
+            # print('CALL_FUNCTION_KW', keys, values)
+            params = values[:len(keys)]
+            values = values[len(keys):]
+            # print('CALL_FUNCTION_KW params', params, values)
+            ctx.stack = ctx.stack[:-param]
             obj = ctx.stack.pop()
             # print('CALL_FUNCTION_KW', obj)
             # print('CALL_FUNCTION_KW', dir(obj))
-            val = obj(**dict(zip(keys, values)))
+            val = obj(*params, **dict(zip(keys, values)))
             ctx.stack.append(val)
             # print('CALL_FUNCTION_KW', val)
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x8e: # CALL_FUNCTION_EX
-            argc = co_code[ctx.pc+1]
-            # print('CALL_FUNCTION_EX', argc)
+            # print('CALL_FUNCTION_EX', param)
             kargs = ctx.stack.pop()
             args = ctx.stack.pop()
             obj = ctx.stack.pop()
@@ -602,28 +618,33 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x8f: # SETUP_WITH
-            param = co_code[ctx.pc+1]
-            print('SETUP_WITH', param)
+            # print('SETUP_WITH', param)
 
             obj = ctx.stack.pop()
             enter = obj.__enter__()
-            print('SETUP_WITH', enter)
+            # print('SETUP_WITH', enter)
 
             ctx.stack.append(ctx.pc + param + 2)
             ctx.stack.append(enter)
             ctx.pc += 2
 
+        elif co_code[ctx.pc] == 0x90: # EXTENDED_ARG
+            self.extended_arg = param << 8
+            ctx.pc += 2
+            # varname = ctx.code.co_varnames[param]
+            # val = ctx.local_vars[varname]
+            # print('co_varnames', ctx.code.co_varnames)
+            # print('local_vars', ctx.local_vars)
+
         elif co_code[ctx.pc] == 0x9b: # FORMAT_VALUE
-            param = co_code[ctx.pc+1]
             format_string = ctx.stack.pop()
             val = ctx.stack.pop()
             ctx.stack.append(format(val, format_string))
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x9c: # BUILD_CONST_KEY_MAP
-            param = co_code[ctx.pc+1]
-            print('BUILD_CONST_KEY_MAP', param)
-            print(ctx.stack)
+            # print('BUILD_CONST_KEY_MAP', param)
+            # print(ctx.stack)
             keys = ctx.stack.pop()
             assert len(keys) == param
 
@@ -637,21 +658,18 @@ class VM:
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0x9d: # BUILD_STRING
-            argc = co_code[ctx.pc+1]
-            # print('BUILD_STRING', argc)
-            values = ctx.stack[-argc:]
-            ctx.stack = ctx.stack[:-argc]
+            # print('BUILD_STRING', param)
+            values = ctx.stack[-param:]
+            ctx.stack = ctx.stack[:-param]
             ctx.stack.append(''.join(values))
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0xa0: # LOAD_METHOD
-            param = co_code[ctx.pc+1]
             # print('LOAD_METHOD', param)
             ctx.stack.append(ctx.code.co_names[param])
             ctx.pc += 2
 
         elif co_code[ctx.pc] == 0xa1: # CALL_METHOD
-            param = co_code[ctx.pc+1]
             # print('CALL_METHOD', param)
             # print('CALL_METHOD', ctx.stack)
             obj = ctx.stack[-2-param]
@@ -665,10 +683,14 @@ class VM:
             # print('CALL_METHOD', params)
             # print('CALL_METHOD', obj.__getattribute__(method))
             if type(obj) == type:
-                method_obj = obj.__dict__[method]
-                call_obj = method_obj.__get__(obj)
-                # print('CALL_METHOD', obj.__dict__[method])
-                result = functools.partial(call_obj, *params)()
+                if obj in self.native_vars:
+                    # print('CALL_METHOD', obj.__dict__[method])
+                    result = functools.partial(obj.__dict__[method], obj, *params)()
+                else:
+                    method_obj = obj.__dict__[method]
+                    call_obj = method_obj.__get__(obj)
+                    # print('CALL_METHOD', method_obj, call_obj)
+                    result = functools.partial(call_obj, *params)()
             else:
                 try:
                     result = functools.partial(obj.__getattribute__(method), *params)()
